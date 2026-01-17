@@ -1,0 +1,179 @@
+{
+  "module": "Module 5: Incident Store",
+  "projectLead": "John Smith (Solution Architect)",
+  "technology": "Go + PostgreSQL",
+  "criticalNote": "SOURCE OF TRUTH - Must be reliable, simple, and fast. No analysis, pure storage and retrieval.",
+  "taskAssignment": {
+    "aliceJohnson": {
+      "role": "Product Manager",
+      "team": "Team Alpha",
+      "responsibilities": [
+        "Strict adherence to storage-only responsibility",
+        "Deduplication validation",
+        "Code review - zero tolerance for analysis logic"
+      ],
+      "engineers": {
+        "bobWilliams": {
+          "name": "Bob Williams",
+          "tasks": [
+            "PostgreSQL schema design",
+            "Database connection management",
+            "Main store service",
+            "HTTP API for incident ingestion"
+          ],
+          "files": [
+            "cmd/incident-store/main.go",
+            "internal/store/engine.go",
+            "internal/store/database.go",
+            "internal/store/schema.go",
+            "internal/api/handler.go"
+          ],
+          "strictRules": [
+            "Pure storage only",
+            "No signal detection",
+            "No analysis",
+            "Read/write operations only"
+          ]
+        },
+        "charlieBrown": {
+          "name": "Charlie Brown",
+          "tasks": [
+            "Incident ingestion endpoint",
+            "Status management",
+            "Validation logic",
+            "Error handling"
+          ],
+          "files": [
+            "internal/api/ingest.go",
+            "internal/store/status.go"
+          ],
+          "strictRules": [
+            "Accept incidents from UFSE only",
+            "Validate incident structure",
+            "No business logic"
+          ]
+        },
+        "dianaPrince": {
+          "name": "Diana Prince",
+          "tasks": [
+            "Query API for Ticket Exporter",
+            "Deduplication logic",
+            "Filtering and pagination",
+            "Performance optimization"
+          ],
+          "files": [
+            "internal/api/query.go",
+            "internal/store/deduplication.go"
+          ],
+          "strictRules": [
+            "Read-only for consumers",
+            "Efficient queries",
+            "No analysis in queries"
+          ]
+        }
+      }
+    },
+    "eveDavis": {
+      "role": "Product Manager",
+      "team": "Team Beta",
+      "responsibilities": [
+        "API quality",
+        "Performance validation",
+        "Code review - zero tolerance for slowness"
+      ],
+      "engineers": {
+        "frankMiller": {
+          "name": "Frank Miller",
+          "tasks": [
+            "PostgreSQL migrations",
+            "Index optimization",
+            "Connection pooling",
+            "Query performance"
+          ],
+          "files": [
+            "internal/store/migrations.go",
+            "internal/store/connection.go"
+          ],
+          "strictRules": [
+            "Fast queries",
+            "Proper indexing",
+            "Connection pooling"
+          ]
+        },
+        "graceLee": {
+          "name": "Grace Lee",
+          "tasks": [
+            "Observability metrics",
+            "Health checks",
+            "Error tracking",
+            "Performance monitoring"
+          ],
+          "files": [
+            "internal/observability/metrics.go",
+            "internal/api/health.go"
+          ],
+          "strictRules": [
+            "Track all operations",
+            "Monitor query performance",
+            "Alert on failures"
+          ]
+        },
+        "henryWilson": {
+          "name": "Henry Wilson",
+          "tasks": [
+            "HTTP API endpoints",
+            "API documentation",
+            "Request validation",
+            "Response formatting"
+          ],
+          "files": [
+            "internal/api/endpoints.go",
+            "internal/api/middleware.go"
+          ],
+          "strictRules": [
+            "RESTful API design",
+            "Proper error responses",
+            "Request validation"
+          ]
+        }
+      }
+    }
+  },
+  "reviewProcess": {
+    "codeReview": [
+      "John Smith (Solution Architect) - Final review, zero tolerance for analysis logic",
+      "Alice Johnson (PM) - Review Team Alpha, strict adherence check",
+      "Eve Davis (PM) - Review Team Beta, strict adherence check",
+      "Cross-team peer review - focus on storage-only responsibility"
+    ],
+    "checkpoints": [
+      "No analysis or signal detection",
+      "Pure storage and retrieval",
+      "Deduplication working",
+      "Fast queries",
+      "Proper indexing",
+      "API endpoints working",
+      "Observability complete"
+    ]
+  },
+  "deliverables": [
+    "PostgreSQL schema",
+    "Database migrations",
+    "Incident ingestion API",
+    "Query API for Ticket Exporter",
+    "Deduplication logic",
+    "Status management",
+    "Observability metrics",
+    "HTTP API",
+    "Unit tests",
+    "Integration tests"
+  ],
+  "strictWarnings": [
+    "NO signal detection",
+    "NO analysis",
+    "NO business logic",
+    "Pure storage and retrieval only",
+    "Fast queries required",
+    "Reliable storage required"
+  ]
+}

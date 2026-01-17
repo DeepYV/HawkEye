@@ -1,0 +1,192 @@
+{
+  "module": "Module 7: Ticket Exporter",
+  "projectLead": "John Smith (Solution Architect)",
+  "technology": "Go",
+  "criticalNote": "LAST STEP BEFORE HUMAN ATTENTION - Must be perfect, conservative, deterministic, idempotent. If noisy, entire product fails.",
+  "taskAssignment": {
+    "aliceJohnson": {
+      "role": "Product Manager",
+      "team": "Team Alpha",
+      "responsibilities": [
+        "Strict adherence to export eligibility rules",
+        "Idempotency validation",
+        "Code review - zero tolerance for noise"
+      ],
+      "engineers": {
+        "bobWilliams": {
+          "name": "Bob Williams",
+          "tasks": [
+            "Export eligibility checker",
+            "Incident Store interaction",
+            "Export status tracking",
+            "Main exporter service"
+          ],
+          "files": [
+            "cmd/ticket-exporter/main.go",
+            "internal/exporter/engine.go",
+            "internal/exporter/eligibility.go",
+            "internal/exporter/store.go"
+          ],
+          "strictRules": [
+            "Only confirmed incidents",
+            "Only high confidence (≥ threshold)",
+            "Check suppression",
+            "Check already exported",
+            "Respect rate limits"
+          ]
+        },
+        "charlieBrown": {
+          "name": "Charlie Brown",
+          "tasks": [
+            "Ticket content formatter",
+            "Title generation (short, specific, non-AI)",
+            "Description structure",
+            "Metadata mapping"
+          ],
+          "files": [
+            "internal/exporter/formatter.go",
+            "internal/exporter/content.go"
+          ],
+          "strictRules": [
+            "Title must be short and specific",
+            "Description must follow exact structure",
+            "No AI-sounding language",
+            "No speculation as fact"
+          ]
+        },
+        "dianaPrince": {
+          "name": "Diana Prince",
+          "tasks": [
+            "Export timing strategy",
+            "Batching logic",
+            "Rate limiting",
+            "Backoff on failure"
+          ],
+          "files": [
+            "internal/exporter/scheduler.go",
+            "internal/exporter/ratelimit.go"
+          ],
+          "strictRules": [
+            "Periodic poll (configurable)",
+            "Max tickets per interval",
+            "Exponential backoff",
+            "Never spam"
+          ]
+        }
+      }
+    },
+    "eveDavis": {
+      "role": "Product Manager",
+      "team": "Team Beta",
+      "responsibilities": [
+        "Adapter quality",
+        "Idempotency guarantees",
+        "Code review - zero tolerance for duplicates"
+      ],
+      "engineers": {
+        "frankMiller": {
+          "name": "Frank Miller",
+          "tasks": [
+            "Jira adapter",
+            "Linear adapter",
+            "Adapter interface",
+            "Idempotency key handling"
+          ],
+          "files": [
+            "internal/adapters/interface.go",
+            "internal/adapters/jira.go",
+            "internal/adapters/linear.go"
+          ],
+          "strictRules": [
+            "Pluggable adapter pattern",
+            "Idempotency via external_ticket_id",
+            "One incident = one ticket",
+            "No duplicates ever"
+          ]
+        },
+        "graceLee": {
+          "name": "Grace Lee",
+          "tasks": [
+            "Failure handling",
+            "Retry logic with backoff",
+            "Recovery mechanisms",
+            "Error tracking"
+          ],
+          "files": [
+            "internal/exporter/retry.go",
+            "internal/exporter/failure.go"
+          ],
+          "strictRules": [
+            "Exponential backoff",
+            "Max retry cap",
+            "Never create duplicates",
+            "Mark export_failed on permanent failure"
+          ]
+        },
+        "henryWilson": {
+          "name": "Henry Wilson",
+          "tasks": [
+            "HTTP API for configuration",
+            "Observability metrics",
+            "Export tracking",
+            "API endpoints"
+          ],
+          "files": [
+            "internal/api/handler.go",
+            "internal/api/endpoints.go",
+            "internal/observability/metrics.go"
+          ],
+          "strictRules": [
+            "Track all export attempts",
+            "Track skipped exports with reason",
+            "Track failures",
+            "Internal observability only"
+          ]
+        }
+      }
+    }
+  },
+  "reviewProcess": {
+    "codeReview": [
+      "John Smith (Solution Architect) - Final review, zero tolerance for noise",
+      "Alice Johnson (PM) - Review Team Alpha, strict adherence check",
+      "Eve Davis (PM) - Review Team Beta, strict adherence check",
+      "Cross-team peer review - focus on idempotency and no noise"
+    ],
+    "checkpoints": [
+      "Export eligibility strictly enforced",
+      "Idempotency verified (one incident = one ticket)",
+      "No duplicates possible",
+      "Ticket content is clean and actionable",
+      "Rate limiting working",
+      "Failure handling graceful",
+      "No auto-updates or auto-closing",
+      "Observability complete"
+    ]
+  },
+  "deliverables": [
+    "Ticket exporter service",
+    "Export eligibility checker",
+    "Jira adapter",
+    "Linear adapter",
+    "Ticket content formatter",
+    "Export scheduler",
+    "Rate limiting",
+    "Retry logic",
+    "Observability metrics",
+    "HTTP API",
+    "Unit tests",
+    "Integration tests"
+  ],
+  "strictWarnings": [
+    "NO auto-comments after creation",
+    "NO ticket updates after export",
+    "NO syncing ticket status back",
+    "NO auto-resolution",
+    "NO duplicates ever",
+    "NO noise - if noisy, product fails",
+    "Conservative by default",
+    "Deterministic behavior",
+    "Idempotent operations"
+  ]
+}

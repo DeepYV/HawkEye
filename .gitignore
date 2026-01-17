@@ -1,0 +1,72 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+e2e-test-runner
+ticket-exporter
+testing.test
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.out
+session_coverage.out
+signals_coverage.out
+validation_coverage.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+/tmp/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# Build artifacts
+dist/
+build/
+bin/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database files (if any)
+*.db
+*.sqlite
+
+# Test results
+test_results.txt
+test_summary.txt
+e2e_test_results.txt
+e2e_full_test_results.txt
+e2e_rage_test.txt
+e2e_execution_results.txt
+session_manager_test_results.txt

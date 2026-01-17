@@ -1,0 +1,137 @@
+{
+  "module": "Module 3: Session Manager",
+  "projectLead": "John Smith (Solution Architect)",
+  "technology": "Go",
+  "taskAssignment": {
+    "aliceJohnson": {
+      "role": "Product Manager",
+      "team": "Team Alpha",
+      "responsibilities": [
+        "Session lifecycle validation",
+        "Event ordering guarantees",
+        "Code review coordination"
+      ],
+      "engineers": {
+        "bobWilliams": {
+          "name": "Bob Williams",
+          "tasks": [
+            "Session state machine",
+            "Session lifecycle management",
+            "Session state transitions",
+            "Main session manager service"
+          ],
+          "files": [
+            "cmd/session-manager/main.go",
+            "internal/session/manager.go",
+            "internal/session/state.go",
+            "internal/session/lifecycle.go"
+          ]
+        },
+        "charlieBrown": {
+          "name": "Charlie Brown",
+          "tasks": [
+            "Event ordering",
+            "Timestamp sorting",
+            "Event deduplication",
+            "Order preservation"
+          ],
+          "files": [
+            "internal/session/ordering.go",
+            "internal/session/deduplication.go"
+          ]
+        },
+        "dianaPrince": {
+          "name": "Diana Prince",
+          "tasks": [
+            "Session completion detection",
+            "Idle timeout handling",
+            "Session termination rules",
+            "Edge case handling"
+          ],
+          "files": [
+            "internal/session/completion.go",
+            "internal/session/timeout.go"
+          ]
+        }
+      }
+    },
+    "eveDavis": {
+      "role": "Product Manager",
+      "team": "Team Beta",
+      "responsibilities": [
+        "Session emission",
+        "Performance optimization",
+        "Code review coordination"
+      ],
+      "engineers": {
+        "frankMiller": {
+          "name": "Frank Miller",
+          "tasks": [
+            "Session emission",
+            "Session serialization",
+            "Output formatting",
+            "Emission guarantees"
+          ],
+          "files": [
+            "internal/session/emission.go",
+            "internal/session/serialization.go"
+          ]
+        },
+        "graceLee": {
+          "name": "Grace Lee",
+          "tasks": [
+            "Session storage",
+            "Session cleanup",
+            "Memory management",
+            "Storage abstraction"
+          ],
+          "files": [
+            "internal/session/storage.go",
+            "internal/session/cleanup.go"
+          ]
+        },
+        "henryWilson": {
+          "name": "Henry Wilson",
+          "tasks": [
+            "HTTP API for event ingestion",
+            "Forwarding to UFSE",
+            "Observability metrics",
+            "API endpoints"
+          ],
+          "files": [
+            "internal/api/handler.go",
+            "internal/api/endpoints.go",
+            "internal/observability/metrics.go"
+          ]
+        }
+      }
+    }
+  },
+  "reviewProcess": {
+    "codeReview": [
+      "John Smith (Solution Architect) - Final review & architecture validation",
+      "Alice Johnson (PM) - Review Team Alpha work",
+      "Eve Davis (PM) - Review Team Beta work",
+      "Cross-team peer review"
+    ],
+    "checkpoints": [
+      "Session state machine working",
+      "Event ordering verified",
+      "Session completion working",
+      "Session emission tested",
+      "No cross-session contamination",
+      "Performance benchmarks met"
+    ]
+  },
+  "deliverables": [
+    "Session Manager service",
+    "Session state machine",
+    "Event ordering & deduplication",
+    "Session completion logic",
+    "Session emission",
+    "HTTP API for events",
+    "Observability metrics",
+    "Unit tests",
+    "Integration tests"
+  ]
+}

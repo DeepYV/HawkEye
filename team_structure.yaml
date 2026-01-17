@@ -1,0 +1,37 @@
+solutionArchitect:
+  name: "John Smith"
+  role: "Solution Architect"
+  yearsExperience: 30
+  productManagers:
+    - name: "Alice Johnson"
+      role: "Product Manager"
+      engineers:
+        - name: "Bob Williams"
+          role: "Engineer"
+          yearsExperience: 10
+        - name: "Charlie Brown"
+          role: "Engineer"
+          yearsExperience: 10
+        - name: "Diana Prince"
+          role: "Engineer"
+          yearsExperience: 10
+    - name: "Eve Davis"
+      role: "Product Manager"
+      engineers:
+        - name: "Frank Miller"
+          role: "Engineer"
+          yearsExperience: 10
+        - name: "Grace Lee"
+          role: "Engineer"
+          yearsExperience: 10
+        - name: "Henry Wilson"
+          role: "Engineer"
+          yearsExperience: 10
+  principalEngineer:
+    name: "Principal Engineer"
+    role: "Principal Engineer"
+    yearsExperience: 15
+  qa:
+    name: "QA Engineer"
+    role: "QA Engineer"
+    yearsExperience: 8

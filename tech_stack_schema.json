@@ -1,0 +1,289 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tech Stack Architecture",
+  "description": "Schema for solution architecture tech stack definition",
+  "type": "object",
+  "required": ["highLevelPrinciples", "components", "security"],
+  "properties": {
+    "highLevelPrinciples": {
+      "type": "object",
+      "required": ["mustBe", "optimizeFor"],
+      "properties": {
+        "mustBe": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optimizeFor": {
+          "type": "string"
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "required": [
+        "frontendSDK",
+        "eventTransport",
+        "backendCore",
+        "apiLayer",
+        "dataStorage",
+        "sessionProcessing",
+        "aiLLMLayer",
+        "integrations",
+        "infrastructure",
+        "observability"
+      ],
+      "properties": {
+        "frontendSDK": {
+          "type": "object",
+          "required": ["language", "frameworkSupport", "characteristics"],
+          "properties": {
+            "language": {
+              "type": "string",
+              "enum": ["TypeScript"]
+            },
+            "frameworkSupport": {
+              "type": "object"
+            },
+            "characteristics": {
+              "type": "object"
+            },
+            "rationale": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "eventTransport": {
+          "type": "object",
+          "required": ["protocol", "format", "compression"],
+          "properties": {
+            "protocol": {
+              "type": "object"
+            },
+            "format": {
+              "type": "string",
+              "enum": ["JSON"]
+            },
+            "compression": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "avoid": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "backendCore": {
+          "type": "object",
+          "required": ["name", "language"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string",
+              "enum": ["Go"]
+            },
+            "rationale": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "apiLayer": {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "object"
+            },
+            "rationale": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "avoid": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "dataStorage": {
+          "type": "object",
+          "required": ["eventStorage", "coreMetadata"],
+          "properties": {
+            "eventStorage": {
+              "type": "object",
+              "required": ["database", "purpose", "retention"],
+              "properties": {
+                "database": {
+                  "type": "string",
+                  "enum": ["ClickHouse"]
+                },
+                "purpose": {
+                  "type": "string"
+                },
+                "retention": {
+                  "type": "string"
+                }
+              }
+            },
+            "coreMetadata": {
+              "type": "object",
+              "required": ["database", "stores"],
+              "properties": {
+                "database": {
+                  "type": "string",
+                  "enum": ["PostgreSQL"]
+                },
+                "stores": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "sessionProcessing": {
+          "type": "object",
+          "required": ["pattern", "implementation", "evaluation", "engine"],
+          "properties": {
+            "pattern": {
+              "type": "string"
+            },
+            "implementation": {
+              "type": "string"
+            },
+            "evaluation": {
+              "type": "string"
+            },
+            "engine": {
+              "type": "string"
+            },
+            "avoidEarly": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "aiLLMLayer": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string"
+            },
+            "modelAccess": {
+              "type": "object"
+            },
+            "usagePattern": {
+              "type": "object"
+            },
+            "rationale": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "integrations": {
+          "type": "object",
+          "properties": {
+            "approach": {
+              "type": "string"
+            },
+            "protocols": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "targets": {
+              "type": "object"
+            }
+          }
+        },
+        "infrastructure": {
+          "type": "object",
+          "required": ["cloud", "components"],
+          "properties": {
+            "cloud": {
+              "type": "object",
+              "properties": {
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["AWS", "GCP"]
+                  }
+                }
+              }
+            },
+            "components": {
+              "type": "object"
+            },
+            "avoid": {
+              "type": "string"
+            }
+          }
+        },
+        "observability": {
+          "type": "object",
+          "required": ["metrics", "logs", "tracing"],
+          "properties": {
+            "metrics": {
+              "type": "object"
+            },
+            "logs": {
+              "type": "object"
+            },
+            "tracing": {
+              "type": "string"
+            },
+            "principle": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "required": ["mandatory", "future"],
+      "properties": {
+        "mandatory": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "future": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
