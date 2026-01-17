@@ -70,3 +70,19 @@ e2e_full_test_results.txt
 e2e_rage_test.txt
 e2e_execution_results.txt
 session_manager_test_results.txt
+
+# Documentation and instruction files (for Cursor)
+*.md
+*instructions*.json
+*_instructions.json
+frontend_sdk_instructions.json
+ufse_instructions.json
+architecture_flow.json
+architecture_flow.yaml
+team_*.json
+team_*.yaml
+tech_stack*.json
+tech_stack*.yaml
+modules.json
+modules.yaml
+prometheus.yml
