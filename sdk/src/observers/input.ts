@@ -12,7 +12,7 @@ export class InputObserver {
   private eventQueue: EventQueue;
   private focusHandler: ((e: FocusEvent) => void) | null = null;
   private blurHandler: ((e: FocusEvent) => void) | null = null;
-  private submitHandler: ((e: Event) => void) | null = null;
+  private submitHandler: ((e: SubmitEvent) => void) | null = null;
 
   constructor(sessionManager: SessionManager, eventQueue: EventQueue) {
     this.sessionManager = sessionManager;
@@ -79,7 +79,7 @@ export class InputObserver {
     };
 
     // Form submission
-    this.submitHandler = (e: Event) => {
+    this.submitHandler = (e: SubmitEvent) => {
       const form = e.target as HTMLFormElement;
       if (!form || form.tagName !== 'FORM') {
         return;

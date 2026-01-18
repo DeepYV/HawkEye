@@ -11,7 +11,7 @@ export class SessionManager {
   constructor() {
     this.sessionId = this.generateSessionId();
     this.startTime = Date.now();
-    this.currentRoute = this.getCurrentRoute();
+    this.currentRoute = this.getCurrentRouteFromWindow();
   }
 
   /**
@@ -27,9 +27,9 @@ export class SessionManager {
   }
 
   /**
-   * Get current route/path
+   * Get current route/path (internal helper)
    */
-  private getCurrentRoute(): string {
+  private getCurrentRouteFromWindow(): string {
     if (typeof window !== 'undefined') {
       return window.location.pathname + window.location.search;
     }
@@ -70,6 +70,6 @@ export class SessionManager {
   reset(): void {
     this.sessionId = this.generateSessionId();
     this.startTime = Date.now();
-    this.currentRoute = this.getCurrentRoute();
+    this.currentRoute = this.getCurrentRouteFromWindow();
   }
 }

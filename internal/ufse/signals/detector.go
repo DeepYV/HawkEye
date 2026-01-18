@@ -20,18 +20,20 @@ type CandidateSignal struct {
 }
 
 // DetectCandidateSignals detects all candidate signals in classified events
-// Uses refined detectors for production-grade detection with zero false alarms
+// Uses enhanced detectors for improved frustration detection
 func DetectCandidateSignals(classified []ClassifiedEvent, session types.Session) []CandidateSignal {
 	candidates := make([]CandidateSignal, 0)
 
-	// Use refined detectors for better accuracy
-	rageDetector := NewRefinedRageDetector()
+	// Use enhanced detectors for better accuracy
+	enhancedRageDetector := NewEnhancedRageDetector()
+	rageBaitDetector := NewRageBaitDetector()
 	blockedDetector := NewRefinedBlockedDetector()
 	abandonmentDetector := NewRefinedAbandonmentDetector()
 	confusionDetector := NewRefinedConfusionDetector()
 
-	// Detect each type of candidate signal with refined detection
-	candidates = append(candidates, rageDetector.DetectRageInteractionRefined(classified, session)...)
+	// Detect each type of candidate signal with enhanced detection
+	candidates = append(candidates, enhancedRageDetector.DetectRageMultiTier(classified, session)...)
+	candidates = append(candidates, rageBaitDetector.DetectRageBait(classified, session)...)
 	candidates = append(candidates, blockedDetector.DetectBlockedProgressRefined(classified, session)...)
 	candidates = append(candidates, abandonmentDetector.DetectAbandonmentRefined(classified, session)...)
 	candidates = append(candidates, confusionDetector.DetectConfusionRefined(classified, session)...)

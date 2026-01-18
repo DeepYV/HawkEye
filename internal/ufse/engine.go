@@ -30,8 +30,15 @@ func NewEngine(incidentStoreURL string) *Engine {
 
 // ProcessSession processes a completed session and returns incidents
 func (e *Engine) ProcessSession(ctx context.Context, session types.Session) []*types.Incident {
-	// Process through pipeline (deterministic)
-	incidents := ProcessSession(session)
+	var incidents []*types.Incident
+	
+	// Use enhanced detection if enabled via feature flag
+	if IsEnhancedDetectionEnabled() {
+		incidents = ProcessSessionEnhanced(session)
+	} else {
+		// Use standard pipeline
+		incidents = ProcessSession(session)
+	}
 
 	// Forward incidents to Incident Store using request context
 	for _, incident := range incidents {
