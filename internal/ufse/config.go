@@ -8,7 +8,6 @@
 package ufse
 
 import (
-	"os"
 	"strconv"
 	"time"
 

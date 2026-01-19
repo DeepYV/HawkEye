@@ -54,7 +54,7 @@ func correlateSingleSignals(qualified []signals.QualifiedSignal) []CorrelatedGro
 
 	for _, signal := range qualified {
 		// Check if signal has high strength
-		strengthScore := getSignalStrengthScore(signal)
+		strengthScore := getSignalStrengthScoreFromSignal(signal)
 		
 		if strengthScore >= singleSignalStrengthThreshold {
 			// Check if it's a high-strength signal type
@@ -106,7 +106,7 @@ func isValidEnhancedCorrelation(group CorrelatedGroup) bool {
 
 	// Requirement 2: For single signals, must be high-strength
 	if len(group.Signals) == 1 {
-		strengthScore := getSignalStrengthScore(group.Signals[0])
+		strengthScore := getSignalStrengthScoreFromSignal(group.Signals[0])
 		if strengthScore < singleSignalStrengthThreshold {
 			return false
 		}
@@ -124,7 +124,7 @@ func isValidEnhancedCorrelation(group CorrelatedGroup) bool {
 			if signal.SystemFeedback {
 				hasSystemFeedback = true
 			}
-			avgStrengthScore += getSignalStrengthScore(signal)
+			avgStrengthScore += getSignalStrengthScoreFromSignal(signal)
 		}
 		avgStrengthScore = avgStrengthScore / float64(len(group.Signals))
 
@@ -146,8 +146,8 @@ func isValidEnhancedCorrelation(group CorrelatedGroup) bool {
 	return false
 }
 
-// getSignalStrengthScore extracts signal strength score from signal details
-func getSignalStrengthScore(signal signals.QualifiedSignal) float64 {
+// getSignalStrengthScoreFromSignal extracts signal strength score from signal details
+func getSignalStrengthScoreFromSignal(signal signals.QualifiedSignal) float64 {
 	if details := signal.Details; details != nil {
 		if strengthScore, ok := details["strengthScore"].(float64); ok {
 			return strengthScore
@@ -245,10 +245,10 @@ func areGroupsOverlapping(group1, group2 CorrelatedGroup) bool {
 	}
 
 	// Check time overlap
-	timeWindow1 := getGroupTimeWindow(group1)
-	timeWindow2 := getGroupTimeWindow(group2)
+	start1, end1 := getGroupTimeWindow(group1)
+	start2, end2 := getGroupTimeWindow(group2)
 
-	return timeWindowsOverlap(timeWindow1, timeWindow2)
+	return timeWindowsOverlap(start1, end1, start2, end2)
 }
 
 // getGroupTimeWindow gets the time window for a group
@@ -275,41 +275,4 @@ func getGroupTimeWindow(group CorrelatedGroup) (time.Time, time.Time) {
 // timeWindowsOverlap checks if two time windows overlap
 func timeWindowsOverlap(start1, end1, start2, end2 time.Time) bool {
 	return start1.Before(end2) && start2.Before(end1)
-}
-
-// Helper function to get signal strength score (duplicated from enhanced_calculator for now)
-func getSignalStrengthScore(signal signals.QualifiedSignal) float64 {
-	if details := signal.Details; details != nil {
-		if strengthScore, ok := details["strengthScore"].(float64); ok {
-			return strengthScore
-		}
-		if strength, ok := details["strength"].(string); ok {
-			switch strength {
-			case "high":
-				return 0.9
-			case "medium":
-				return 0.6
-			case "low":
-				return 0.4
-			}
-		}
-		if darkPatternScore, ok := details["darkPatternScore"].(float64); ok {
-			return darkPatternScore
-		}
-	}
-	
-	switch signal.Type {
-	case "rage_bait":
-		return 0.9
-	case "rage":
-		return 0.6
-	case "blocked":
-		return 0.7
-	case "abandonment":
-		return 0.5
-	case "confusion":
-		return 0.3
-	default:
-		return 0.5
-	}
 }
