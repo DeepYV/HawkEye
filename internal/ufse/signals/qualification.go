@@ -23,7 +23,8 @@ type QualifiedSignal struct {
 	Timestamp         time.Time
 	Route             string
 	Details           map[string]interface{}
-	SystemFeedback    bool // Whether this is a system feedback signal
+	SystemFeedback    bool    // Whether this is a system feedback signal
+	Strength          float64 // Signal strength (0-1)
 }
 
 // QualifySignals qualifies candidate signals

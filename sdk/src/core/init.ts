@@ -42,12 +42,14 @@ export function initFrustrationObserver(config: SDKConfig): void {
       configManager.getApiKey()
     );
 
-    // Initialize event queue
+    // Initialize event queue with environment and session ID for idempotency keys
     eventQueue = new EventQueue(
       transport,
       configManager.getBatchSize(),
       configManager.getBatchInterval(),
-      configManager.isDebugEnabled()
+      configManager.isDebugEnabled(),
+      configManager.getEnvironment(),
+      sessionManager.getSessionId()
     );
 
     // Initialize observers

@@ -8,6 +8,7 @@ const DEFAULT_CONFIG: Partial<SDKConfig> = {
   batchSize: 10,
   batchInterval: 5000, // 5 seconds
   enableDebug: false,
+  environment: undefined, // Auto-detect by default
 };
 
 export class ConfigManager {
@@ -95,5 +96,25 @@ export class ConfigManager {
    */
   getAppId(): string | undefined {
     return this.config.appId;
+  }
+
+  /**
+   * Get environment (auto-detect if not configured)
+   */
+  getEnvironment(): string {
+    if (this.config.environment) {
+      return this.config.environment;
+    }
+    // Auto-detect environment based on URL
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'development';
+      }
+      if (hostname.includes('staging') || hostname.includes('stage') || hostname.includes('test')) {
+        return 'staging';
+      }
+    }
+    return 'production';
   }
 }

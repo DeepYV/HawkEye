@@ -13,7 +13,6 @@ import (
 
 	"github.com/your-org/frustration-engine/internal/types"
 	"github.com/your-org/frustration-engine/internal/ufse/correlation"
-	"github.com/your-org/frustration-engine/internal/ufse/scoring"
 	"github.com/your-org/frustration-engine/internal/ufse/signals"
 )
 

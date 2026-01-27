@@ -13,7 +13,7 @@ import (
 
 // CandidateSignal represents a candidate signal (not yet qualified)
 type CandidateSignal struct {
-	Type      string // "rage", "blocked", "abandonment", "confusion"
+	Type      string // "rage", "blocked", "abandonment", "confusion", "form_loop"
 	Timestamp int64  // Unix timestamp
 	Route     string
 	Details   map[string]interface{}
@@ -30,6 +30,7 @@ func DetectCandidateSignals(classified []ClassifiedEvent, session types.Session)
 	blockedDetector := NewRefinedBlockedDetector()
 	abandonmentDetector := NewRefinedAbandonmentDetector()
 	confusionDetector := NewRefinedConfusionDetector()
+	formLoopDetector := NewFormLoopDetector()
 
 	// Detect each type of candidate signal with enhanced detection
 	candidates = append(candidates, enhancedRageDetector.DetectRageMultiTier(classified, session)...)
@@ -37,6 +38,7 @@ func DetectCandidateSignals(classified []ClassifiedEvent, session types.Session)
 	candidates = append(candidates, blockedDetector.DetectBlockedProgressRefined(classified, session)...)
 	candidates = append(candidates, abandonmentDetector.DetectAbandonmentRefined(classified, session)...)
 	candidates = append(candidates, confusionDetector.DetectConfusionRefined(classified, session)...)
+	candidates = append(candidates, formLoopDetector.DetectFormLoops(classified, session)...)
 
 	return candidates
 }

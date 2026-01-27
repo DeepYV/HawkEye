@@ -13,25 +13,49 @@ export class EventQueue {
   private batchInterval: number;
   private intervalId: number | null = null;
   private debugEnabled: boolean;
+  private environment: string;
+  private idempotencyCounter: number = 0;
+  private sessionId: string;
 
   constructor(
     transport: HTTPTransport,
     batchSize: number,
     batchInterval: number,
-    debugEnabled: boolean = false
+    debugEnabled: boolean = false,
+    environment: string = 'production',
+    sessionId: string = ''
   ) {
     this.transport = transport;
     this.batchSize = batchSize;
     this.batchInterval = batchInterval;
     this.debugEnabled = debugEnabled;
+    this.environment = environment;
+    this.sessionId = sessionId;
     this.startBatchTimer();
   }
 
   /**
+   * Generate unique idempotency key for event
+   * Format: sessionId-timestamp-counter
+   */
+  private generateIdempotencyKey(timestamp: string): string {
+    this.idempotencyCounter++;
+    return `${this.sessionId}-${timestamp}-${this.idempotencyCounter}`;
+  }
+
+  /**
    * Add event to queue
+   * Enriches event with environment and idempotency key
    */
   add(event: Event): void {
-    this.queue.push(event);
+    // Enrich event with environment and idempotency key
+    const enrichedEvent: Event = {
+      ...event,
+      environment: this.environment,
+      idempotencyKey: this.generateIdempotencyKey(event.timestamp),
+    };
+
+    this.queue.push(enrichedEvent);
 
     // Send immediately if batch size reached
     if (this.queue.length >= this.batchSize) {
