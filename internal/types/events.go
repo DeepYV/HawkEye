@@ -19,12 +19,14 @@ type IngestRequest struct {
 
 // Event represents a normalized event from the SDK
 type Event struct {
-	EventType string                 `json:"eventType"`
-	Timestamp string                 `json:"timestamp"`
-	SessionID string                 `json:"sessionId"`
-	Route     string                 `json:"route"`
-	Target    EventTarget            `json:"target"`
-	Metadata  map[string]interface{} `json:"metadata"`
+	EventType      string                 `json:"eventType"`
+	Timestamp      string                 `json:"timestamp"`
+	SessionID      string                 `json:"sessionId"`
+	Route          string                 `json:"route"`
+	Target         EventTarget            `json:"target"`
+	Metadata       map[string]interface{} `json:"metadata"`
+	Environment    string                 `json:"environment,omitempty"`    // "production", "staging", "development"
+	IdempotencyKey string                 `json:"idempotencyKey,omitempty"` // Unique key to prevent duplicate signal processing
 }
 
 // EventTarget represents the target of an event

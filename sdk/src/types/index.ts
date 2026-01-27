@@ -16,6 +16,8 @@ export interface Event {
   route: string;
   target: EventTarget;
   metadata?: Record<string, any>;
+  environment?: string;        // "production", "staging", "development"
+  idempotencyKey?: string;     // Unique key to prevent duplicate signal processing
 }
 
 export interface IngestRequest {
@@ -39,6 +41,7 @@ export interface SDKConfig {
   batchInterval?: number;
   projectId?: string;
   appId?: string;
+  environment?: string;       // "production", "staging", "development" - defaults to auto-detect
 }
 
 export interface SessionInfo {
