@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HawkEye - Vanilla JS Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>HawkEye Observer SDK - Vanilla JS Example</h1>
+
+    <div class="info">
+        <h3>Status: <span id="status">Initializing...</span></h3>
+        <p>Session ID: <span id="session-id">-</span></p>
+    </div>
+
+    <h2>Interactive Demo</h2>
+    <p>All interactions on this page are automatically tracked by HawkEye:</p>
+
+    <button id="test-button">Click Me</button>
+    <button id="custom-event">Track Custom Event</button>
+
+    <h3>Form Example</h3>
+    <form id="demo-form">
+        <input type="text" placeholder="Type something..." />
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Load SDK from CDN or local build -->
+    <script type="module">
+        // For CDN: import from unpkg or jsdelivr
+        // import { initFrustrationObserver, getSessionId, captureEvent } from 'https://unpkg.com/@hawkeye/observer-sdk';
+
+        // For local development: import from your build
+        import { initFrustrationObserver, getSessionId, captureEvent } from '../../sdk/dist/index.js';
+
+        // Initialize HawkEye
+        initFrustrationObserver({
+            apiKey: 'demo-api-key',
+            ingestionUrl: 'https://api.hawkeye.example.com',
+            enableDebug: true,
+            environment: 'development',
+            appId: 'vanilla-js-demo',
+        });
+
+        // Update UI with session ID
+        const sessionId = getSessionId();
+        document.getElementById('status').textContent = 'Active';
+        document.getElementById('session-id').textContent = sessionId || 'N/A';
+
+        // Track custom event
+        document.getElementById('custom-event').addEventListener('click', () => {
+            captureEvent(
+                'custom_button_click',
+                { type: 'button', id: 'custom-event' },
+                { feature: 'demo', timestamp: Date.now() }
+            );
+            alert('Custom event tracked!');
+        });
+
+        // Prevent form submission for demo
+        document.getElementById('demo-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Form submission tracked!');
+        });
+    </script>
+</body>
+</html>

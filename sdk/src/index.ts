@@ -3,5 +3,5 @@
  * Main entry point
  */
 
-export { initFrustrationObserver, getSessionId, captureEvent, flushEvents } from './core/init';
+export { initFrustrationObserver, getSessionId, captureEvent, flushEvents, teardown } from './core/init';
 export type { SDKConfig, Event, EventTarget, IngestRequest, IngestResponse } from './types';
