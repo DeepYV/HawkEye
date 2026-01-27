@@ -123,3 +123,41 @@ export function flushEvents(): Promise<void> {
   }
   return eventQueue.flush();
 }
+
+/**
+ * Teardown the SDK (cleanup resources, stop observers)
+ */
+export async function teardown(): Promise<void> {
+  if (!isInitialized) {
+    return;
+  }
+
+  try {
+    // Flush any pending events
+    if (eventQueue) {
+      await eventQueue.flush();
+      eventQueue.stop();
+    }
+
+    // Stop all observers
+    if (observerManager) {
+      observerManager.stop();
+    }
+
+    // Clear references
+    isInitialized = false;
+    configManager = null;
+    sessionManager = null;
+    eventQueue = null;
+    transport = null;
+    observerManager = null;
+
+    if (configManager?.isDebugEnabled()) {
+      console.log('HawkEye SDK: Teardown complete');
+    }
+  } catch (error) {
+    if (configManager?.isDebugEnabled()) {
+      console.error('HawkEye SDK: Teardown failed', error);
+    }
+  }
+}
