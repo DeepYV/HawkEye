@@ -132,6 +132,8 @@ export async function teardown(): Promise<void> {
     return;
   }
 
+  const debugEnabled = configManager?.isDebugEnabled() || false;
+
   try {
     // Flush any pending events
     if (eventQueue) {
@@ -152,11 +154,11 @@ export async function teardown(): Promise<void> {
     transport = null;
     observerManager = null;
 
-    if (configManager?.isDebugEnabled()) {
+    if (debugEnabled) {
       console.log('HawkEye SDK: Teardown complete');
     }
   } catch (error) {
-    if (configManager?.isDebugEnabled()) {
+    if (debugEnabled) {
       console.error('HawkEye SDK: Teardown failed', error);
     }
   }
