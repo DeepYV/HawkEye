@@ -10,6 +10,7 @@ package main
 import (
 	"flag"
 	"log"
+	"strings"
 
 	"github.com/your-org/frustration-engine/internal/config"
 	"github.com/your-org/frustration-engine/internal/server"
@@ -22,16 +23,30 @@ func main() {
 	sessionManagerURL := flag.String("session-manager", config.GetEnv("SESSION_MANAGER_URL", "http://localhost:8081"), "Session Manager URL")
 	rateLimitRPS := flag.Int("rate-limit-rps", 1000, "Rate limit requests per second")
 	rateLimitBurst := flag.Int("rate-limit-burst", 2000, "Rate limit burst capacity")
+	environment := flag.String("environment", config.GetEnv("ENVIRONMENT", "production"), "Environment (development/staging/production)")
 
 	flag.Parse()
 
+	// Parse CORS allowed origins from environment
+	corsOrigins := []string{}
+	if originsEnv := config.GetEnv("CORS_ALLOWED_ORIGINS", ""); originsEnv != "" {
+		for _, origin := range strings.Split(originsEnv, ",") {
+			origin = strings.TrimSpace(origin)
+			if origin != "" {
+				corsOrigins = append(corsOrigins, origin)
+			}
+		}
+	}
+
 	// Create server
 	cfg := server.Config{
-		Port:              *port,
-		ClickHouseDSN:     *clickhouseDSN,
-		SessionManagerURL: *sessionManagerURL,
-		RateLimitRPS:      *rateLimitRPS,
-		RateLimitBurst:    *rateLimitBurst,
+		Port:               *port,
+		ClickHouseDSN:      *clickhouseDSN,
+		SessionManagerURL:  *sessionManagerURL,
+		RateLimitRPS:       *rateLimitRPS,
+		RateLimitBurst:     *rateLimitBurst,
+		Environment:        *environment,
+		CORSAllowedOrigins: corsOrigins,
 	}
 
 	srv, err := server.NewServer(cfg)

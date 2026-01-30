@@ -43,6 +43,8 @@ type Config struct {
 	SessionManagerURL string
 	RateLimitRPS      int
 	RateLimitBurst    int
+	Environment       string // "development", "staging", "production"
+	CORSAllowedOrigins []string
 }
 
 // NewServer creates a new server instance
@@ -84,7 +86,11 @@ func NewServer(cfg Config) (*Server, error) {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(10 * time.Second))
-	
+
+	// CORS middleware (before security headers for preflight support)
+	corsConfig := getCORSConfig(cfg)
+	router.Use(CORSMiddleware(corsConfig))
+
 	// Security headers middleware
 	router.Use(security.SecurityHeadersMiddleware)
 
@@ -137,4 +143,33 @@ func (s *Server) Start(port string) error {
 	}()
 
 	return server.ListenAndServe()
+}
+
+// getCORSConfig returns the appropriate CORS configuration based on environment
+func getCORSConfig(cfg Config) CORSConfig {
+	// Check environment from config or environment variable
+	env := cfg.Environment
+	if env == "" {
+		env = os.Getenv("ENVIRONMENT")
+	}
+	if env == "" {
+		env = os.Getenv("HAWKEYE_ENVIRONMENT")
+	}
+
+	// Development environment - allow localhost
+	if env == "development" || env == "dev" || env == "local" {
+		config := LocalDevCORSConfig()
+		// Add any additional configured origins
+		if len(cfg.CORSAllowedOrigins) > 0 {
+			config.AllowedOrigins = append(config.AllowedOrigins, cfg.CORSAllowedOrigins...)
+		}
+		log.Printf("[Server] CORS enabled for local development (localhost allowed)")
+		return config
+	}
+
+	// Production environment - only explicit origins
+	config := DefaultCORSConfig()
+	config.AllowLocalhost = false
+	config.AllowedOrigins = cfg.CORSAllowedOrigins
+	return config
 }
