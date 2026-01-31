@@ -7,9 +7,11 @@
 import { initFrustrationObserver, getSessionId, captureEvent, teardown } from '@hawkeye/observer-sdk';
 
 // Configuration
+// For local development with the dev server (./scripts/start_dev.sh),
+// use http://localhost:8080 as the single ingestionUrl.
 const config = {
-  apiKey: 'your-api-key-here',
-  ingestionUrl: 'https://api.hawkeye.example.com',
+  apiKey: 'your-api-key-here',             // Use 'dev-api-key' with the dev server
+  ingestionUrl: 'https://api.hawkeye.example.com', // Use 'http://localhost:8080' for local dev
   enableDebug: true,
   environment: 'production',
   appId: 'my-vanilla-app',
