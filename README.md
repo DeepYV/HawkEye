@@ -123,18 +123,219 @@ function MyApp({ Component, pageProps }) {
 
 [Full Vanilla JS Example →](./examples/vanilla-js/README.md)
 
-## Local Development Setup
+## Integration Guide
 
-This section explains how to run and integrate HawkEye locally when the frontend and backend run on separate ports.
+This section covers how to integrate HawkEye into your application. Choose the setup that matches your architecture.
 
 ### Prerequisites
 
 - **Go 1.21+** for the backend services
 - **Node.js 18+** and npm for the frontend SDK
-- **ClickHouse** for event storage (optional — the ingestion service logs events if unavailable)
-- **PostgreSQL** for incident storage (optional — use `log-only` mode for testing without a database)
 
-### Service Ports
+### Step 1: Install the SDK
+
+Since the SDK is not published to the public npm registry, install it locally:
+
+```bash
+# Clone the repository (private — requires access)
+git clone https://github.com/DeepYV/HawkEye.git
+cd HawkEye
+
+# Build the SDK
+cd sdk && npm install && npm run build
+
+# Option A: Install from local path (in your frontend project)
+cd /path/to/your-frontend-app
+npm install /path/to/HawkEye/sdk
+
+# Option B: Use npm link
+cd /path/to/HawkEye/sdk && npm link
+cd /path/to/your-frontend-app && npm link @hawkeye/observer-sdk
+```
+
+### Step 2: Choose Your Architecture
+
+---
+
+### Option A: Single Port (Everything on Port 3000)
+
+Use this when your frontend and HawkEye backend run behind a **single port** — ideal for quick local development and testing. The dev server bundles all HawkEye services (Event Ingestion, Session Manager, UFSE, Incident Store) into one process with in-memory storage. No ClickHouse or PostgreSQL required.
+
+**Start the dev server on port 3000:**
+
+```bash
+# Using the startup script
+PORT=3000 ./scripts/start_dev.sh
+
+# Or run directly
+go run ./cmd/devserver --port 3000 --api-key dev-api-key --storage memory
+```
+
+**Initialize the SDK in your app (React example):**
+
+```jsx
+import { useEffect } from 'react';
+import { initFrustrationObserver, teardown } from '@hawkeye/observer-sdk';
+
+function App() {
+  useEffect(() => {
+    initFrustrationObserver({
+      apiKey: 'dev-api-key',
+      ingestionUrl: 'http://localhost:3000',  // same port as your app
+      enableDebug: true,
+    });
+
+    return () => teardown();
+  }, []);
+
+  return <div>Your App</div>;
+}
+```
+
+**Next.js example:**
+
+```jsx
+// pages/_app.js
+import { useEffect } from 'react';
+import { initFrustrationObserver, teardown } from '@hawkeye/observer-sdk';
+
+function MyApp({ Component, pageProps }) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      initFrustrationObserver({
+        apiKey: 'dev-api-key',
+        ingestionUrl: 'http://localhost:3000',
+      });
+    }
+    return () => teardown();
+  }, []);
+
+  return <Component {...pageProps} />;
+}
+
+export default MyApp;
+```
+
+**Vanilla JavaScript example:**
+
+```html
+<script type="module">
+  import { initFrustrationObserver } from '@hawkeye/observer-sdk';
+
+  initFrustrationObserver({
+    apiKey: 'dev-api-key',
+    ingestionUrl: 'http://localhost:3000',
+  });
+</script>
+```
+
+**Available endpoints (all on port 3000):**
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/v1/events` | Receives events from the SDK |
+| `GET` | `/v1/incidents` | Query detected frustration incidents |
+| `GET` | `/health` | Health check for all services |
+
+---
+
+### Option B: Two Ports (Frontend: 3000, Backend: 8080)
+
+Use this when your frontend and backend run on **separate ports** — closer to a production-like setup. The frontend app runs on port 3000 (React, Next.js, etc.) and the HawkEye backend runs on port 8080.
+
+**Terminal 1 — Start the HawkEye backend (port 8080):**
+
+```bash
+# Quick option: single-process dev server
+./scripts/start_dev.sh
+# Default port is 8080, no databases needed
+
+# Or start all services individually for full pipeline:
+export ENVIRONMENT=development
+go run ./cmd/event-ingestion   # port 8080
+go run ./cmd/session-manager   # port 8081 (in a separate terminal)
+go run ./cmd/ufse              # port 8082 (in a separate terminal)
+go run ./cmd/incident-store    # port 8084 (in a separate terminal)
+```
+
+**Terminal 2 — Start your frontend app (port 3000):**
+
+```bash
+# React
+cd your-react-app && npm start        # runs on http://localhost:3000
+
+# Next.js
+cd your-nextjs-app && npm run dev     # runs on http://localhost:3000
+
+# Vite
+cd your-vite-app && npm run dev       # runs on http://localhost:5173
+```
+
+**Initialize the SDK pointing to the backend port:**
+
+```jsx
+import { useEffect } from 'react';
+import { initFrustrationObserver, teardown } from '@hawkeye/observer-sdk';
+
+function App() {
+  useEffect(() => {
+    initFrustrationObserver({
+      apiKey: 'dev-api-key',
+      ingestionUrl: 'http://localhost:8080',  // backend port, NOT your app port
+      enableDebug: true,
+    });
+
+    return () => teardown();
+  }, []);
+
+  return <div>Your App</div>;
+}
+```
+
+**Next.js with environment variables:**
+
+```bash
+# .env.local
+NEXT_PUBLIC_HAWKEYE_API_KEY=dev-api-key
+NEXT_PUBLIC_HAWKEYE_INGESTION_URL=http://localhost:8080
+```
+
+```jsx
+// pages/_app.js
+import { useEffect } from 'react';
+import { initFrustrationObserver, teardown } from '@hawkeye/observer-sdk';
+
+function MyApp({ Component, pageProps }) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      initFrustrationObserver({
+        apiKey: process.env.NEXT_PUBLIC_HAWKEYE_API_KEY,
+        ingestionUrl: process.env.NEXT_PUBLIC_HAWKEYE_INGESTION_URL,
+      });
+    }
+    return () => teardown();
+  }, []);
+
+  return <Component {...pageProps} />;
+}
+
+export default MyApp;
+```
+
+**Vanilla JavaScript:**
+
+```html
+<script type="module">
+  import { initFrustrationObserver } from '@hawkeye/observer-sdk';
+
+  initFrustrationObserver({
+    apiKey: 'dev-api-key',
+    ingestionUrl: 'http://localhost:8080',
+  });
+</script>
+```
+
+**Service ports (two-port mode):**
 
 | Service            | Default Port | Purpose                                                |
 |--------------------|-------------|--------------------------------------------------------|
@@ -144,80 +345,61 @@ This section explains how to run and integrate HawkEye locally when the frontend
 | Incident Store      | 8084        | Persists and queries incidents                          |
 | **Your Frontend App** | **3000**  | React / Next.js (or any port your framework uses)       |
 
-### Starting the Backend
+> The SDK appends `/v1/events` automatically, so you only need to provide the base URL.
 
-```bash
-# Clone the repository (private — requires access)
-git clone https://github.com/DeepYV/HawkEye.git
-cd HawkEye
+---
 
-# Set development environment
-export ENVIRONMENT=development
+### Step 3: Verify the Integration
 
-# Start each service (in separate terminals or via a process manager)
-go run ./cmd/event-ingestion
-go run ./cmd/session-manager
-go run ./cmd/ufse
-go run ./cmd/incident-store
-```
+Once both the backend and frontend are running, open your app in a browser and interact with it (click around, scroll, navigate between pages). You should see:
 
-Each service reads its port from the `PORT` environment variable and falls back to the defaults listed above.
+1. **In the browser console** (if `enableDebug: true`): log messages showing events being captured and sent.
+2. **In the backend terminal**: log messages showing events being received at `/v1/events`.
+3. **Health check**: Visit `http://localhost:<backend-port>/health` to confirm the backend is running.
 
-### Connecting the Frontend SDK
-
-Point the SDK's `ingestionUrl` at the local Event Ingestion API:
-
-```javascript
-import { initFrustrationObserver } from '@hawkeye/observer-sdk';
-
-initFrustrationObserver({
-  apiKey: 'test-key',                        // any string works in development
-  ingestionUrl: 'http://localhost:8080',      // Event Ingestion API
-  enableDebug: true,                         // enable console logging
-});
-```
-
-The SDK appends `/v1/events` automatically, so you only need to provide the base URL.
-
-For **Next.js**, use environment variables so the URL is easy to change per environment:
-
-```bash
-# .env.local
-NEXT_PUBLIC_HAWKEYE_API_KEY=test-key
-NEXT_PUBLIC_HAWKEYE_INGESTION_URL=http://localhost:8080
-```
+### SDK Configuration Options
 
 ```javascript
 initFrustrationObserver({
-  apiKey: process.env.NEXT_PUBLIC_HAWKEYE_API_KEY,
-  ingestionUrl: process.env.NEXT_PUBLIC_HAWKEYE_INGESTION_URL,
+  apiKey: 'your-api-key',            // required — any string in development
+  ingestionUrl: 'http://localhost:8080', // required — backend base URL
+  enableDebug: true,                 // optional — logs events to console (default: false)
+  batchSize: 10,                     // optional — events per batch (default: 10)
+  batchInterval: 5000,              // optional — ms between batch sends (default: 5000)
+  projectId: 'my-project',          // optional — project identifier
+  appId: 'my-app',                  // optional — app identifier
+  environment: 'development',       // optional — auto-detected from hostname if omitted
 });
 ```
+
+### SDK API Methods
+
+| Method | Description |
+|--------|-------------|
+| `initFrustrationObserver(config)` | Start tracking user interactions |
+| `teardown()` | Stop tracking and flush pending events |
+| `captureEvent(type, target, metadata?)` | Manually track a custom event |
+| `getSessionId()` | Get the current session ID |
+| `flushEvents()` | Immediately send all pending events |
 
 ### Environment Variables
 
-#### Backend (Event Ingestion)
+#### Backend
 
 | Variable                | Default                  | Description                                          |
 |-------------------------|--------------------------|------------------------------------------------------|
 | `ENVIRONMENT`           | `production`             | Set to `development` to enable local CORS and debug  |
 | `PORT`                  | `8080`                   | HTTP listen port                                     |
-| `CLICKHOUSE_DSN`        | `localhost:9000`         | ClickHouse connection string                         |
+| `CLICKHOUSE_DSN`        | `localhost:9000`         | ClickHouse connection string (optional in dev)       |
 | `SESSION_MANAGER_URL`   | `http://localhost:8081`  | Where to forward sessions                            |
+| `UFSE_URL`              | `http://localhost:8082`  | UFSE endpoint (used by Session Manager)              |
+| `INCIDENT_STORE_URL`    | `http://localhost:8084`  | Incident Store endpoint (used by UFSE)               |
+| `DATABASE_URL`          | _(required in prod)_     | PostgreSQL DSN for Incident Store                    |
 | `CORS_ALLOWED_ORIGINS`  | _(empty)_                | Additional allowed origins (comma-separated)         |
 
-#### Backend (Session Manager / UFSE / Incident Store)
+#### Frontend SDK (Next.js)
 
-| Variable              | Default                  | Description                              |
-|-----------------------|--------------------------|------------------------------------------|
-| `PORT`                | `8081` / `8082` / `8084` | HTTP listen port (per service)           |
-| `UFSE_URL`            | `http://localhost:8082`  | UFSE endpoint (used by Session Manager)  |
-| `INCIDENT_STORE_URL`  | `http://localhost:8084`  | Incident Store endpoint (used by UFSE)   |
-| `DATABASE_URL`        | _(required in prod)_     | PostgreSQL DSN for Incident Store        |
-
-#### Frontend SDK
-
-| Variable (Next.js example)              | Description                           |
+| Variable                                | Description                           |
 |-----------------------------------------|---------------------------------------|
 | `NEXT_PUBLIC_HAWKEYE_API_KEY`           | API key sent with every event batch   |
 | `NEXT_PUBLIC_HAWKEYE_INGESTION_URL`     | Base URL of the Event Ingestion API   |
@@ -238,30 +420,14 @@ If your frontend runs on a different port, either:
 
 In **production**, set `ENVIRONMENT=production` and list your origins explicitly via `CORS_ALLOWED_ORIGINS`.
 
-### Private Repository Considerations
-
-- The SDK is not published to the public npm registry. Install it locally from the `sdk/` directory:
-  ```bash
-  cd sdk && npm install && npm run build
-  # Then in your frontend project:
-  npm install ../HawkEye/sdk
-  ```
-  Or use `npm link`:
-  ```bash
-  cd HawkEye/sdk && npm link
-  cd your-frontend-app && npm link @hawkeye/observer-sdk
-  ```
-- Backend services are built from source — no external binary distribution is needed.
-- All inter-service communication happens over `localhost` by default, so no external network access is required during development.
-
 ### Quick-Start Checklist
 
 1. Clone the repository and install Go 1.21+.
-2. Set `export ENVIRONMENT=development`.
-3. Start the Event Ingestion API: `go run ./cmd/event-ingestion`.
-4. In your frontend app, initialize the SDK with `ingestionUrl: 'http://localhost:8080'`.
-5. Open your app in a browser and interact with it — events will flow to the backend.
-6. (Optional) Start the remaining services to enable full frustration detection.
+2. Build the SDK: `cd sdk && npm install && npm run build`.
+3. Install the SDK in your frontend app: `npm install /path/to/HawkEye/sdk`.
+4. Start the backend: `./scripts/start_dev.sh` (port 8080) or `PORT=3000 ./scripts/start_dev.sh` (port 3000).
+5. Initialize the SDK with `ingestionUrl` pointing to the backend port.
+6. Open your app in a browser and interact — events will flow to the backend.
 
 ## Architecture
 
