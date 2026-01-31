@@ -127,6 +127,14 @@ func (s *Storage) StoreEvents(ctx context.Context, projectID string, events []ty
 	return batch.Send()
 }
 
+// Close closes the ClickHouse connection.
+func (s *Storage) Close() error {
+	if s.logOnly || s.conn == nil {
+		return nil
+	}
+	return s.conn.Close()
+}
+
 // createTable creates the events table if it doesn't exist
 func createTable(ctx context.Context, conn driver.Conn) error {
 	query := `

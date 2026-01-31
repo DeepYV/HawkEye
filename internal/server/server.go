@@ -31,7 +31,7 @@ import (
 type Server struct {
 	router      *chi.Mux
 	authStore   *auth.Store
-	storage     *storage.Storage
+	storage     storage.EventStore
 	forwarder   *forwarding.Manager
 	rateLimiter *ratelimit.Limiter
 }
