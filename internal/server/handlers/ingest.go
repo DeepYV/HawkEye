@@ -21,13 +21,13 @@ import (
 
 // Handler handles HTTP requests
 type Handler struct {
-	storage   *storage.Storage
+	storage   storage.EventStore
 	forwarder *forwarding.Manager
 	authStore *auth.Store
 }
 
 // NewHandler creates a new handler
-func NewHandler(storage *storage.Storage, forwarder *forwarding.Manager, authStore *auth.Store) *Handler {
+func NewHandler(storage storage.EventStore, forwarder *forwarding.Manager, authStore *auth.Store) *Handler {
 	return &Handler{
 		storage:   storage,
 		forwarder: forwarder,

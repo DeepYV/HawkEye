@@ -30,4 +30,17 @@ export function useHawkEye(config) {
  *
  *   return <div>Your app</div>;
  * }
+ *
+ * Local development (with dev server on single port):
+ *
+ * function App() {
+ *   useHawkEye({
+ *     apiKey: 'dev-api-key',
+ *     ingestionUrl: 'http://localhost:8080',
+ *     enableDebug: true,
+ *     environment: 'development',
+ *   });
+ *
+ *   return <div>Your app</div>;
+ * }
  */
