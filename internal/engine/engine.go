@@ -13,6 +13,8 @@
 package engine
 
 import (
+	"sort"
+	"strconv"
 	"time"
 
 	"github.com/your-org/frustration-engine/internal/metrics"
@@ -117,7 +119,12 @@ func DetectFrustration(session types.Session) []*types.Incident {
 func classifyEvents(events []oldtypes.Event) []signals.ClassifiedEvent {
 	classified := make([]signals.ClassifiedEvent, 0, len(events))
 	for _, event := range events {
-		ts, _ := time.Parse(time.RFC3339, event.Timestamp)
+		ts, ok := parseEventTimestamp(event.Timestamp)
+		if !ok {
+			// Events without a parseable timestamp cannot be safely used in
+			// temporal correlation logic and are skipped to reduce false positives.
+			continue
+		}
 		category := classifyEventType(event.EventType, event.Metadata)
 		classified = append(classified, signals.ClassifiedEvent{
 			Event:     event,
@@ -126,7 +133,30 @@ func classifyEvents(events []oldtypes.Event) []signals.ClassifiedEvent {
 			Route:     event.Route,
 		})
 	}
+
+	// Ensure deterministic chronological ordering for time-window based
+	// detectors, even when ingestion batches arrive out of order.
+	sort.SliceStable(classified, func(i, j int) bool {
+		return classified[i].Timestamp.Before(classified[j].Timestamp)
+	})
+
 	return classified
+}
+
+func parseEventTimestamp(raw string) (time.Time, bool) {
+	if raw == "" {
+		return time.Time{}, false
+	}
+
+	if ts, err := time.Parse(time.RFC3339Nano, raw); err == nil {
+		return ts, true
+	}
+
+	if millis, err := strconv.ParseInt(raw, 10, 64); err == nil {
+		return time.UnixMilli(millis).UTC(), true
+	}
+
+	return time.Time{}, false
 }
 
 func classifyEventType(eventType string, metadata map[string]interface{}) string {
