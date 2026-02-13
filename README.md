@@ -156,6 +156,68 @@ See `examples/` for framework-specific guides:
 - [Next.js](examples/nextjs/) — SSR-safe initialization
 - [Vanilla JS](examples/vanilla-js/) — plain HTML/JS
 
+## Integration with Other Applications
+
+HawkEye is designed to integrate in three common ways depending on your architecture.
+
+### 1) Frontend app integration (browser SDK)
+
+Use this for React, Next.js, Vue, Angular, or plain JS apps.
+
+```javascript
+import { initFrustrationObserver } from '@hawkeye/observer-sdk';
+
+initFrustrationObserver({
+  apiKey: process.env.HAWKEYE_API_KEY,
+  ingestionUrl: 'https://hawkeye.your-company.com',
+});
+```
+
+The SDK sends behavioral events to `POST /v1/events`, and your app can query incidents from `GET /v1/incidents` (typically via your backend).
+
+### 2) Backend-to-backend integration (no browser SDK)
+
+If you already collect product analytics events, forward selected events server-side to HawkEye:
+
+```bash
+curl -X POST https://hawkeye.your-company.com/v1/events \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $HAWKEYE_API_KEY" \
+  -d '{
+    "events": [
+      {
+        "eventType": "error",
+        "timestamp": "2024-01-01T00:00:00Z",
+        "sessionId": "sess-123",
+        "route": "/checkout",
+        "metadata": {"error": "payment_failed"}
+      }
+    ]
+  }'
+```
+
+This is useful for mobile backends, API gateways, and event pipelines (Kafka/Segment/ETL workers).
+
+### 3) Incident export to ticketing/ops systems
+
+HawkEye supports adapters and exporter components that can route detected incidents to downstream tools.
+
+- Adapter interfaces: `internal/adapters/interface.go`
+- Built-in adapters: JIRA and Linear (`internal/adapters/jira.go`, `internal/adapters/linear.go`)
+- Export engine/scheduler: `internal/exporter/engine.go`, `internal/exporter/scheduler.go`
+
+Typical pattern:
+1. HawkEye detects incidents.
+2. Exporter applies eligibility/priority/rate-limit rules.
+3. Adapter creates/updates external tickets.
+
+### Recommended production integration pattern
+
+- Run HawkEye behind your API gateway at a stable internal domain.
+- Keep API keys in secrets manager, not source code.
+- Use ClickHouse/PostgreSQL backends in production.
+- Let your application backend own incident read APIs for tenant-aware access control.
+
 ## Storage Abstraction
 
 ```go

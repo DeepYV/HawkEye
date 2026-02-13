@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"sort"
 	"testing"
 	"time"
 
@@ -17,6 +18,51 @@ func TestDetectFrustration_EmptySession(t *testing.T) {
 	incidents := DetectFrustration(session)
 	if len(incidents) != 0 {
 		t.Errorf("expected 0 incidents for empty session, got %d", len(incidents))
+	}
+}
+
+func TestClassifyEvents_SortsByTimestampAndSkipsInvalid(t *testing.T) {
+	events := []types.Event{
+		{EventType: "click", Timestamp: "", Route: "/a"},
+		{EventType: "click", Timestamp: "not-a-time", Route: "/a"},
+		{EventType: "click", Timestamp: "1710000000123", Route: "/b"}, // unix millis
+		{EventType: "click", Timestamp: "2024-03-10T12:00:01.100000000Z", Route: "/c"},
+		{EventType: "click", Timestamp: "2024-03-10T12:00:00Z", Route: "/d"},
+	}
+
+	oldSession := toOldSession(types.Session{Events: events})
+	classified := classifyEvents(oldSession.Events)
+
+	if len(classified) != 3 {
+		t.Fatalf("expected 3 valid classified events, got %d", len(classified))
+	}
+
+	if !sort.SliceIsSorted(classified, func(i, j int) bool {
+		return classified[i].Timestamp.Before(classified[j].Timestamp) || classified[i].Timestamp.Equal(classified[j].Timestamp)
+	}) {
+		t.Fatalf("expected classified events to be sorted by timestamp")
+	}
+}
+
+func TestParseEventTimestamp(t *testing.T) {
+	tests := []struct {
+		name  string
+		raw   string
+		valid bool
+	}{
+		{name: "rfc3339nano", raw: "2024-03-10T12:00:00.123456789Z", valid: true},
+		{name: "unix_millis", raw: "1710000000123", valid: true},
+		{name: "invalid", raw: "invalid", valid: false},
+		{name: "empty", raw: "", valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, ok := parseEventTimestamp(tt.raw)
+			if ok != tt.valid {
+				t.Fatalf("parseEventTimestamp(%q) valid=%v, want %v", tt.raw, ok, tt.valid)
+			}
+		})
 	}
 }
 
