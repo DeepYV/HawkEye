@@ -17,7 +17,7 @@ import { init, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
 init({
   apiKey: 'dev-key',
-  ingestionUrl: 'http://localhost:8080',
+  ingestionUrl: 'http://localhost:11224',
   appVersion: '1.4.0',
   events: ['signup_submitted'],
   importantFlows: [{ name: 'signup', steps: ['account'], important: true }],

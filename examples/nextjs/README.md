@@ -94,6 +94,6 @@ Environment variables:
 
 ```env
 NEXT_PUBLIC_HAWKEYE_API_KEY=your-api-key-here
-NEXT_PUBLIC_HAWKEYE_INGESTION_URL=http://localhost:8080
+NEXT_PUBLIC_HAWKEYE_INGESTION_URL=http://localhost:11224
 NEXT_PUBLIC_APP_VERSION=1.4.0
 ```

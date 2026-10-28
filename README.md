@@ -10,12 +10,12 @@ Browser (SDK)  ──▶  HawkEye Server  ──▶  Dashboard
   events ──▶        │   Issues     │  dead clicks, flows, rank
                     │   Ingest     │  legacy session incidents
                     └──────────────┘
-                    Single binary,
-                    single port.
+                    Single binary.
+                    API 11224, dashboard 42211.
                     No session recording.
 ```
 
-One process. One port. Well-isolated modules:
+One process. API on 11224, dashboard on 42211. Well-isolated modules:
 
 | Module | Purpose |
 |--------|---------|
@@ -49,13 +49,13 @@ This starts HawkEye in dev mode: in-memory storage, no database dependencies, CO
 | `GET` | `/v1/issues` | Ranked issues (`window`, `include`, `limit`) |
 | `GET` | `/v1/issues/{id}` | One issue |
 | `GET` | `/v1/flows` | Flow summaries |
-| `GET` | `/` | Dashboard |
-| `GET` | `/app.js` | Dashboard script |
+| `GET` | `http://localhost:42211/` | Dashboard |
+| `GET` | `http://localhost:42211/app.js` | Dashboard script |
 | `GET` | `/v1/incidents` | Query detected incidents |
 | `GET` | `/health` | Health check |
 | `GET` | `/metrics` | Prometheus metrics |
 
-Open the dashboard at http://localhost:8080/.
+Open the dashboard at http://localhost:42211/. The API listens on http://localhost:11224.
 
 ### 2. Install the SDK
 
@@ -70,7 +70,7 @@ import { init, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
 init({
   apiKey: 'dev-api-key',
-  ingestionUrl: 'http://localhost:8080',
+  ingestionUrl: 'http://localhost:11224',
   appVersion: '1.4.0',
   events: ['signup_submitted'],
   importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
@@ -88,12 +88,12 @@ Call `init` from a React or Next.js `useEffect`, and return `teardown` from that
 
 For a flow with more than one step, call `step` in order. `complete()` applies when the final step is already the furthest step.
 
-Open the dashboard at http://localhost:8080/. HawkEye reports dead controls, repeated clicks, validation loops, failed actions, and abandoned flows. It does not record sessions.
+Open the dashboard at http://localhost:42211/. HawkEye reports dead controls, repeated clicks, validation loops, failed actions, and abandoned flows. It does not record sessions.
 
 ## Local Development
 
 ```bash
-# Start with defaults (port 8080, in-memory, api key = dev-api-key)
+# Start with defaults (API 11224, dashboard 42211, in-memory, api key = dev-api-key)
 go run ./cmd/hawkeye --dev
 
 # Custom port and API key
@@ -107,19 +107,19 @@ go test ./...
 
 ```bash
 # Health check
-curl http://localhost:8080/health
+curl http://localhost:11224/health
 
 # Send a test event
-curl -X POST http://localhost:8080/v1/events \
+curl -X POST http://localhost:11224/v1/events \
   -H "Content-Type: application/json" \
   -H "X-API-Key: dev-api-key" \
   -d '{"events":[{"eventType":"click","timestamp":"2024-01-01T00:00:00Z","sessionId":"test","route":"/home","target":{"type":"button","id":"cta"}}]}'
 
 # Query incidents
-curl http://localhost:8080/v1/incidents
+curl http://localhost:11224/v1/incidents
 
 # Prometheus metrics
-curl http://localhost:8080/metrics
+curl http://localhost:11224/metrics
 ```
 
 ## Production Deployment
@@ -128,7 +128,8 @@ For production, configure external storage:
 
 ```bash
 go run ./cmd/hawkeye \
-  --port 8080 \
+  --port 11224 \
+  --dashboard-port 42211 \
   --api-key "$HAWKEYE_API_KEY" \
   --storage clickhouse \
   --incident-dsn "postgres://user:pass@host:5432/hawkeye?sslmode=require"
@@ -163,7 +164,8 @@ OpenTelemetry-ready (disabled by default, enable via environment).
 
 | Flag | Env Var | Default | Description |
 |------|---------|---------|-------------|
-| `--port` | `PORT` | `8080` | Server port |
+| `--port` | `PORT` | `11224` | API and ingest port |
+| `--dashboard-port` | `DASHBOARD_PORT` | `42211` | Dashboard port |
 | `--api-key` | `TEST_API_KEY` | `dev-api-key` | API key for SDK auth |
 | `--storage` | `HAWKEYE_STORAGE` | `memory` | Event storage backend |
 | `--incident-dsn` | `INCIDENT_DSN` | `` (log-only) | PostgreSQL DSN for incidents |
@@ -191,7 +193,7 @@ import { init, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
 init({
   apiKey: 'dev-api-key',
-  ingestionUrl: 'http://localhost:8080',
+  ingestionUrl: 'http://localhost:11224',
   appVersion: '1.4.0',
   events: ['signup_submitted'],
   importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
@@ -209,7 +211,7 @@ Call `init` from a React or Next.js `useEffect`, and return `teardown` from that
 
 For a flow with more than one step, call `step` in order. `complete()` applies when the final step is already the furthest step.
 
-The SDK sends events to `POST /v1/events`. The dashboard is at http://localhost:8080/. Your app can also query `GET /v1/issues` and `GET /v1/flows`.
+The SDK sends events to `POST http://localhost:11224/v1/events`. The dashboard is at http://localhost:42211/. Your app can also query `GET /v1/issues` and `GET /v1/flows` on the API port.
 
 ### 2) Backend-to-backend integration (no browser SDK)
 

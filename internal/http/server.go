@@ -40,16 +40,20 @@ const projectIDKey ctxKey = iota
 // Server wraps the HTTP server with HawkEye route handlers.
 type Server struct {
 	router    chi.Router
+	dashboard chi.Router
 	ingest    *ingest.Handler
 	incidents *incident.Service
 	issues    *issues.Store
 	apiKey    string
+	APIOrigin string
 }
 
 // NewServer creates a new HTTP server with all routes configured.
 func NewServer(ingestHandler *ingest.Handler, incidentSvc *incident.Service, issueStore *issues.Store, apiKey string, devMode bool) *Server {
+	_ = devMode
 	s := &Server{
 		router:    chi.NewRouter(),
+		dashboard: chi.NewRouter(),
 		ingest:    ingestHandler,
 		incidents: incidentSvc,
 		issues:    issueStore,
@@ -62,16 +66,12 @@ func NewServer(ingestHandler *ingest.Handler, incidentSvc *incident.Service, iss
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(middleware.Timeout(30 * time.Second))
 	s.router.Use(s.metricsMiddleware)
-
-	if devMode {
-		s.router.Use(corsMiddleware)
-	}
+	// The dashboard runs on its own port, so the API always allows that browser origin.
+	s.router.Use(corsMiddleware)
 
 	// Public endpoints
 	s.router.Get("/health", s.handleHealth)
 	s.router.Handle("/metrics", promhttp.Handler())
-	s.router.Get("/", s.handleIndex)
-	s.router.Get("/app.js", s.handleAppJS)
 	s.router.Get("/v1/issues", s.handleListIssues)
 	s.router.Get("/v1/issues/{id}", s.handleGetIssue)
 	s.router.Get("/v1/flows", s.handleFlows)
@@ -86,10 +86,13 @@ func NewServer(ingestHandler *ingest.Handler, incidentSvc *incident.Service, iss
 	// Incident query
 	s.router.Get("/v1/incidents", s.handleQueryIncidents)
 
+	s.dashboard.Get("/", s.handleIndex)
+	s.dashboard.Get("/app.js", s.handleAppJS)
+
 	return s
 }
 
-// ListenAndServe starts the HTTP server on the given address.
+// ListenAndServe starts the API and ingest server on the given address.
 func (s *Server) ListenAndServe(addr string) error {
 	srv := &http.Server{
 		Addr:         addr,
@@ -98,7 +101,20 @@ func (s *Server) ListenAndServe(addr string) error {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	log.Printf("[http] listening on %s", addr)
+	log.Printf("[http] api listening on %s", addr)
+	return srv.ListenAndServe()
+}
+
+// ListenAndServeDashboard starts the dashboard on its own address.
+func (s *Server) ListenAndServeDashboard(addr string) error {
+	srv := &http.Server{
+		Addr:         addr,
+		Handler:      s.dashboard,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	log.Printf("[http] dashboard listening on %s", addr)
 	return srv.ListenAndServe()
 }
 
@@ -231,7 +247,19 @@ func (s *Server) handleFlows(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	serveEmbedded(w, "index.html", "text/html; charset=utf-8")
+	b, err := web.Files.ReadFile("index.html")
+	if err != nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	origin, err := json.Marshal(s.APIOrigin)
+	if err != nil {
+		origin = []byte(`""`)
+	}
+	body := strings.ReplaceAll(string(b), "__HAWKEYE_API_JSON__", string(origin))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(body))
 }
 
 func (s *Server) handleAppJS(w http.ResponseWriter, r *http.Request) {

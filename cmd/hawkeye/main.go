@@ -1,12 +1,12 @@
 // HawkEye — Real-Time Frustration Detection Engine
 //
-// Single binary, single port. Run with --dev for local development
-// with in-memory storage and no external dependencies.
+// Single binary. The API listens on 11224 and the dashboard on 42211.
+// Run with --dev for local development with in-memory storage.
 //
 // Usage:
 //
 //	go run ./cmd/hawkeye --dev
-//	go run ./cmd/hawkeye --port 8080 --api-key my-key
+//	go run ./cmd/hawkeye --port 11224 --dashboard-port 42211 --api-key my-key
 package main
 
 import (
@@ -43,6 +43,13 @@ func main() {
 		fmt.Println("\n[hawkeye] shutting down...")
 		application.Stop()
 		cancel()
+	}()
+
+	go func() {
+		dashAddr := ":" + cfg.DashboardPort
+		if err := application.Server.ListenAndServeDashboard(dashAddr); err != nil {
+			log.Printf("[hawkeye] dashboard stopped: %v", err)
+		}
 	}()
 
 	addr := ":" + cfg.Port

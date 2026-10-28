@@ -5,7 +5,7 @@ import { init, track, formOutcome, flow, setRoute, teardown } from '@hawkeye/obs
 
 init({
   apiKey: 'dev-key',
-  ingestionUrl: 'http://localhost:8080',
+  ingestionUrl: 'http://localhost:11224',
   appVersion: '1.4.0',
   events: ['signup_submitted'],
   importantFlows: [{ name: 'signup', steps: ['account'], important: true }],

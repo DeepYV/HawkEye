@@ -7,7 +7,7 @@ import { init, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
 const config = {
   apiKey: 'dev-api-key',
-  ingestionUrl: 'http://localhost:8080',
+  ingestionUrl: 'http://localhost:11224',
   appVersion: '1.4.0',
   environment: 'development',
   events: ['signup_submitted', 'demo_clicked'],

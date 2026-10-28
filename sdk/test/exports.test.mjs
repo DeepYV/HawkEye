@@ -33,7 +33,7 @@ test('init in Node does not throw and does not touch a DOM', () => {
   assert.equal(typeof window, 'undefined');
   assert.equal(typeof document, 'undefined');
   assert.doesNotThrow(() => {
-    init({ apiKey: 'k', ingestionUrl: 'http://localhost:8080' });
+    init({ apiKey: 'k', ingestionUrl: 'http://localhost:11224' });
   });
 });
 

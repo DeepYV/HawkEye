@@ -9,12 +9,13 @@ import (
 
 // Config holds all configuration for the HawkEye server.
 type Config struct {
-	Port         string
-	APIKey       string
-	StorageMode  string // "memory" or "clickhouse"
-	IncidentDSN  string // PostgreSQL DSN or "" for log-only
-	Dev          bool   // development mode: memory storage, debug logging, wide CORS
-	LogLevel     string // "debug", "info", "warn", "error"
+	Port          string
+	DashboardPort string
+	APIKey        string
+	StorageMode   string // "memory" or "clickhouse"
+	IncidentDSN   string // PostgreSQL DSN or "" for log-only
+	Dev           bool   // development mode: memory storage, debug logging, wide CORS
+	LogLevel      string // "debug", "info", "warn", "error"
 }
 
 // Load reads configuration from flags and environment variables.
@@ -22,7 +23,8 @@ type Config struct {
 func Load() *Config {
 	cfg := &Config{}
 
-	flag.StringVar(&cfg.Port, "port", getEnv("PORT", "8080"), "Server port")
+	flag.StringVar(&cfg.Port, "port", getEnv("PORT", "11224"), "API and ingest port")
+	flag.StringVar(&cfg.DashboardPort, "dashboard-port", getEnv("DASHBOARD_PORT", "42211"), "Dashboard port")
 	flag.StringVar(&cfg.APIKey, "api-key", getEnv("TEST_API_KEY", "dev-api-key"), "API key for SDK authentication")
 	flag.StringVar(&cfg.StorageMode, "storage", getEnv("HAWKEYE_STORAGE", "memory"), "Event storage: memory or clickhouse")
 	flag.StringVar(&cfg.IncidentDSN, "incident-dsn", getEnv("INCIDENT_DSN", ""), "PostgreSQL DSN for incidents (empty = log-only)")
@@ -43,14 +45,15 @@ func (c *Config) Print() {
 	fmt.Println("=============================================================")
 	fmt.Println("  HawkEye Frustration Detection Engine")
 	fmt.Println("=============================================================")
-	fmt.Printf("  Port:          %s\n", c.Port)
+	fmt.Printf("  API port:      %s\n", c.Port)
+	fmt.Printf("  Dashboard:     %s\n", c.DashboardPort)
 	fmt.Printf("  API Key:       %s\n", c.APIKey)
 	fmt.Printf("  Event Storage: %s\n", c.StorageMode)
 	fmt.Printf("  Incidents:     %s\n", incidentMode)
 	fmt.Printf("  Dev Mode:      %v\n", c.Dev)
 	fmt.Println("-------------------------------------------------------------")
 	fmt.Println("  Endpoints:")
-	fmt.Printf("    GET  http://localhost:%s/                 (dashboard)\n", c.Port)
+	fmt.Printf("    GET  http://localhost:%s/                 (dashboard)\n", c.DashboardPort)
 	fmt.Printf("    POST http://localhost:%s/v1/events       (event ingestion)\n", c.Port)
 	fmt.Printf("    GET  http://localhost:%s/v1/issues        (ranked issues)\n", c.Port)
 	fmt.Printf("    GET  http://localhost:%s/v1/flows         (flow summaries)\n", c.Port)

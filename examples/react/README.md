@@ -10,7 +10,7 @@ function App() {
   useEffect(() => {
     init({
       apiKey: 'your-api-key-here',
-      ingestionUrl: 'http://localhost:8080',
+      ingestionUrl: 'http://localhost:11224',
       appVersion: '1.4.0',
       events: ['signup_submitted'],
       importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
@@ -46,7 +46,7 @@ import { useHawkEye } from './useHawkEye';
 function App() {
   useHawkEye({
     apiKey: 'your-api-key-here',
-    ingestionUrl: 'http://localhost:8080',
+    ingestionUrl: 'http://localhost:11224',
     events: ['signup_submitted'],
     importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
   });

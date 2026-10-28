@@ -111,13 +111,14 @@
   }
 
   function load() {
-    var issuesURL = "/v1/issues?limit=100";
+    var api = window.HAWKEYE_API || "";
+    var issuesURL = api + "/v1/issues?limit=100";
     if (low && low.checked) issuesURL += "&include=low";
     fetch(issuesURL, { cache: "no-store" })
       .then(function (res) { return res.json(); })
       .then(renderIssues)
       .catch(function () {});
-    fetch("/v1/flows", { cache: "no-store" })
+    fetch(api + "/v1/flows", { cache: "no-store" })
       .then(function (res) { return res.json(); })
       .then(renderFlows)
       .catch(function () {});

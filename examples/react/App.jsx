@@ -5,7 +5,7 @@ function App() {
   useEffect(() => {
     init({
       apiKey: 'your-api-key-here',
-      ingestionUrl: 'http://localhost:8080',
+      ingestionUrl: 'http://localhost:11224',
       appVersion: '1.4.0',
       environment: process.env.NODE_ENV,
       events: ['signup_submitted'],

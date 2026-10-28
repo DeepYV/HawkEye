@@ -41,6 +41,7 @@ func New(cfg *config.Config) *App {
 	ingestHandler := ingest.NewHandler(eventStore, sessionMgr)
 	issueStore := issues.NewStore()
 	server := hawkhttp.NewServer(ingestHandler, incidentSvc, issueStore, cfg.APIKey, cfg.Dev)
+	server.APIOrigin = "http://localhost:" + cfg.Port
 
 	return &App{
 		Server:         server,
