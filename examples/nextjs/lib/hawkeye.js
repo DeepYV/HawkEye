@@ -1,41 +1,40 @@
 /**
- * HawkEye SDK Wrapper for Next.js
- * Provides client-side only initialization
+ * Client-side HawkEye helpers for Next.js.
+ * Call these from useEffect or event handlers, not from a server component.
  */
 
-let isInitialized = false;
-
 export async function initHawkEye(config) {
-  // Only initialize on client side
-  if (typeof window === 'undefined') {
-    return;
-  }
+  if (typeof window === 'undefined') return;
 
-  // Prevent double initialization
-  if (isInitialized) {
-    return;
-  }
-
-  const { initFrustrationObserver } = await import('@hawkeye/observer-sdk');
-
-  initFrustrationObserver({
+  const { init } = await import('@hawkeye/observer-sdk');
+  init({
     apiKey: config.apiKey || process.env.NEXT_PUBLIC_HAWKEYE_API_KEY,
     ingestionUrl: config.ingestionUrl || process.env.NEXT_PUBLIC_HAWKEYE_INGESTION_URL,
-    enableDebug: config.enableDebug ?? process.env.NODE_ENV === 'development',
+    appVersion: config.appVersion,
+    appBuild: config.appBuild,
+    appNamespace: config.appNamespace,
+    releaseId: config.releaseId,
     environment: config.environment || process.env.NODE_ENV,
-    appId: config.appId,
-    batchSize: config.batchSize || 10,
-    batchInterval: config.batchInterval || 5000,
+    events: config.events,
+    importantFlows: config.importantFlows,
   });
-
-  isInitialized = true;
 }
 
-export async function trackEvent(eventType, target, metadata) {
-  if (typeof window === 'undefined') {
-    return;
-  }
+export async function trackEvent(name, props) {
+  if (typeof window === 'undefined') return;
+  const { track } = await import('@hawkeye/observer-sdk');
+  track(name, props);
+}
 
-  const { captureEvent } = await import('@hawkeye/observer-sdk');
-  captureEvent(eventType, target, metadata);
+export async function reportForm(input) {
+  if (typeof window === 'undefined') return;
+  const { formOutcome } = await import('@hawkeye/observer-sdk');
+  formOutcome(input);
+}
+
+/** Next.js `[id]` and `[...slug]` segments become HawkEye `:id` templates. */
+export function hawkeyeTemplate(pathname) {
+  return String(pathname || '/')
+    .replace(/\[\.\.\.[^\]]+\]/g, ':id')
+    .replace(/\[[^\]]+\]/g, ':id');
 }

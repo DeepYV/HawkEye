@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HawkEye</title>
+  <style>
+    :root {
+      --bg: #f3f0e8;
+      --ink: #1c1915;
+      --muted: #5e584e;
+      --line: #ddd6c8;
+      --card: #fffdf8;
+      --accent: #8c3a2f;
+      --high: #1f6b45;
+      --medium: #8a5a12;
+      --low: #6b6560;
+      --chip: #efe8da;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.45 "Avenir Next", "Segoe UI", sans-serif;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-end;
+      padding: 28px 32px 12px;
+    }
+    h1 {
+      font-family: Georgia, "Iowan Old Style", serif;
+      font-size: 32px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.03em;
+    }
+    .lede { margin: 6px 0 0; color: var(--muted); max-width: 40rem; }
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      white-space: nowrap;
+    }
+    main { padding: 8px 32px 48px; display: grid; gap: 22px; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 20px 20px;
+    }
+    h2 {
+      font-family: Georgia, "Iowan Old Style", serif;
+      font-size: 22px;
+      margin: 0 0 14px;
+    }
+    h2 span {
+      display: inline-block;
+      margin-left: 8px;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      padding: 2px 8px;
+      vertical-align: 3px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .cards { display: grid; gap: 14px; }
+    article {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px 16px 8px;
+      background: #fff;
+    }
+    .card-top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+    .type { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -0.02em; }
+    .score {
+      min-width: 72px;
+      text-align: center;
+      background: var(--ink);
+      color: #f6f1e7;
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+    .score b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+    .score span { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #d9d0c2; }
+    .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 4px 16px; margin: 12px 0; }
+    .meta p { margin: 0; font-size: 14px; }
+    .k { color: var(--muted); }
+    .pill { display: inline-block; border-radius: 999px; padding: 1px 8px; background: var(--chip); font-size: 13px; }
+    .pill.high { color: var(--high); }
+    .pill.medium { color: var(--medium); }
+    .pill.low { color: var(--low); }
+    h3 { margin: 14px 0 4px; font-size: 15px; font-weight: 650; color: var(--ink); }
+    article p.body { margin: 0 0 8px; }
+    .empty { color: var(--muted); margin: 0; }
+    section p { max-width: 46rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>HawkEye</h1>
+      <p class="lede">Dead controls, repeated clicks, validation loops, failed actions, and abandoned flows. Sessions are not recorded.</p>
+    </div>
+    <label class="toggle"><input id="show-low" type="checkbox"> Show low confidence</label>
+  </header>
+  <main>
+    <section>
+      <h2>Flows</h2>
+      <div id="flows"></div>
+    </section>
+    <section>
+      <h2>Issues</h2>
+      <div id="issues"></div>
+    </section>
+    <section>
+      <h2>Release comparison <span>next</span></h2>
+      <p>Not built. Versions are stored on each issue for a later comparison.</p>
+    </section>
+    <section>
+      <h2>Targeted feedback <span>next</span></h2>
+      <p>What prevented you from completing this?</p>
+      <p>Not asked. No answer is collected.</p>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

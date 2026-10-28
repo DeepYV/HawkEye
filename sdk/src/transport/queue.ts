@@ -1,122 +1,107 @@
-/**
- * Event Queue
- * Batches events and sends them periodically
- */
+import { BATCH_INTERVAL_MS, BATCH_SIZE, SDK_VERSION } from '../pure/constants.js';
+import type { WireEvent } from '../types/wire.js';
+import { getOriginalFetch } from './fetch.js';
 
-import { Event, IngestRequest } from '../types';
-import { HTTPTransport } from './http';
+export type FlushMode = 'normal' | 'keepalive' | 'unload';
+
+export function eventsEndpoint(ingestionUrl: string): string {
+  const trimmed = ingestionUrl.replace(/\/+$/, '');
+  if (trimmed.endsWith('/v1/events')) return trimmed;
+  return `${trimmed}/v1/events`;
+}
 
 export class EventQueue {
-  private queue: Event[] = [];
-  private transport: HTTPTransport;
-  private batchSize: number;
-  private batchInterval: number;
-  private intervalId: number | null = null;
-  private debugEnabled: boolean;
-  private environment: string;
-  private idempotencyCounter: number = 0;
-  private sessionId: string;
+  private events: WireEvent[] = [];
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private sending = false;
 
   constructor(
-    transport: HTTPTransport,
-    batchSize: number,
-    batchInterval: number,
-    debugEnabled: boolean = false,
-    environment: string = 'production',
-    sessionId: string = ''
+    private readonly url: string,
+    private readonly apiKey: string,
   ) {
-    this.transport = transport;
-    this.batchSize = batchSize;
-    this.batchInterval = batchInterval;
-    this.debugEnabled = debugEnabled;
-    this.environment = environment;
-    this.sessionId = sessionId;
-    this.startBatchTimer();
-  }
-
-  /**
-   * Generate unique idempotency key for event
-   * Format: sessionId-timestamp-counter
-   */
-  private generateIdempotencyKey(timestamp: string): string {
-    this.idempotencyCounter++;
-    return `${this.sessionId}-${timestamp}-${this.idempotencyCounter}`;
-  }
-
-  /**
-   * Add event to queue
-   * Enriches event with environment and idempotency key
-   */
-  add(event: Event): void {
-    // Enrich event with environment and idempotency key
-    const enrichedEvent: Event = {
-      ...event,
-      environment: this.environment,
-      idempotencyKey: this.generateIdempotencyKey(event.timestamp),
-    };
-
-    this.queue.push(enrichedEvent);
-
-    // Send immediately if batch size reached
-    if (this.queue.length >= this.batchSize) {
-      this.flush();
+    if (typeof window !== 'undefined') {
+      this.timer = setInterval(() => {
+        void this.flush('normal');
+      }, BATCH_INTERVAL_MS);
     }
   }
 
-  /**
-   * Flush queue (send all pending events)
-   */
-  async flush(): Promise<void> {
-    if (this.queue.length === 0) {
+  add(event: WireEvent): void {
+    this.events.push(event);
+    if (this.events.length >= BATCH_SIZE) {
+      void this.flush('normal');
+    }
+  }
+
+  async flush(mode: FlushMode): Promise<void> {
+    if (this.events.length === 0) return;
+    if (this.sending && mode === 'normal') return;
+    const batch = this.events.splice(0, this.events.length);
+    const body = JSON.stringify({ sdk_version: SDK_VERSION, events: batch });
+    if (mode === 'unload') {
+      this.postUnload(body);
       return;
     }
-
-    const events = [...this.queue];
-    this.queue = [];
-
+    this.sending = true;
     try {
-      const request: IngestRequest = {
-        api_key: this.transport.getApiKey(),
-        sdk_version: '1.0.0',
-        events,
-      };
-
-      await this.transport.send(request);
-    } catch (error) {
-      // On error, put events back in queue (simple retry)
-      // In production, you might want more sophisticated retry logic
-      this.queue.unshift(...events);
-
-      if (this.debugEnabled) {
-        console.error('HawkEye SDK: Failed to send events', error);
-      }
+      await this.post(body, mode === 'keepalive');
+    } catch {
+      this.events = batch.concat(this.events);
+    } finally {
+      this.sending = false;
     }
   }
 
-  /**
-   * Start batch timer
-   */
-  private startBatchTimer(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    this.intervalId = window.setInterval(() => {
-      this.flush().catch(() => {
-        // Ignore errors in timer
-      });
-    }, this.batchInterval);
-  }
-
-  /**
-   * Stop batch timer
-   */
   stop(): void {
-    if (this.intervalId !== null) {
-      if (typeof window !== 'undefined') {
-        clearInterval(this.intervalId);
-      }
-      this.intervalId = null;
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  private async post(body: string, keepalive: boolean): Promise<void> {
+    const fetchFn = getOriginalFetch();
+    const init: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body,
+    };
+    if (keepalive) init.keepalive = true;
+    await fetchFn(this.url, init);
+  }
+
+  /** Fetch with keepalive. sendBeacon is only used when that call cannot be started. */
+  private postUnload(body: string): void {
+    try {
+      const fetchFn = getOriginalFetch();
+      const pending = fetchFn(this.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': this.apiKey,
+        },
+        body,
+        keepalive: true,
+      });
+      void Promise.resolve(pending).catch(() => {
+        this.beacon(body);
+      });
+    } catch {
+      this.beacon(body);
+    }
+  }
+
+  private beacon(body: string): void {
+    if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return;
+    const join = this.url.includes('?') ? '&' : '?';
+    const beaconUrl = `${this.url}${join}api_key=${encodeURIComponent(this.apiKey)}`;
+    try {
+      navigator.sendBeacon(beaconUrl, new Blob([body], { type: 'application/json' }));
+    } catch {
+      // The page is going away; there is nowhere to retry.
     }
   }
 }

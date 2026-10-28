@@ -1,19 +1,18 @@
 # HawkEye - Real-Time Frustration Detection Engine
 
-HawkEye detects user frustration in real time by analysing behavioural signals — rage clicks, navigation loops, dead ends, error cascades, and scroll thrashing — so product teams can fix UX issues before they impact retention.
+HawkEye reports dead controls, repeated clicks, validation loops, failed actions, and abandoned flows. It does not record sessions.
 
 ## Architecture
 
 ```text
-Browser (SDK)  ──▶  HawkEye Server  ──▶  Incidents
+Browser (SDK)  ──▶  HawkEye Server  ──▶  Dashboard
                     ┌──────────────┐
-  events ──▶        │   Ingest     │
-                    │   Session    │
-                    │   Engine     │  ◀── pure detection logic
-                    │   Incident   │
+  events ──▶        │   Issues     │  dead clicks, flows, rank
+                    │   Ingest     │  legacy session incidents
                     └──────────────┘
                     Single binary,
                     single port.
+                    No session recording.
 ```
 
 One process. One port. Well-isolated modules:
@@ -27,7 +26,9 @@ One process. One port. Well-isolated modules:
 | `internal/http` | HTTP server & routing |
 | `internal/metrics` | Prometheus instrumentation |
 | `internal/storage` | Pluggable storage (memory / ClickHouse / PostgreSQL) |
+| `internal/issues` | Dead controls, confusion, flows, rank, and suggestions |
 | `internal/app` | Wires everything together |
+| `web` | Dashboard served at `/` |
 | `pkg/types` | Shared domain types (SDK-compatible) |
 
 ## Quick Start
@@ -45,9 +46,16 @@ This starts HawkEye in dev mode: in-memory storage, no database dependencies, CO
 | Method | Path | Purpose |
 |--------|------|---------|
 | `POST` | `/v1/events` | Event ingestion (requires API key) |
+| `GET` | `/v1/issues` | Ranked issues (`window`, `include`, `limit`) |
+| `GET` | `/v1/issues/{id}` | One issue |
+| `GET` | `/v1/flows` | Flow summaries |
+| `GET` | `/` | Dashboard |
+| `GET` | `/app.js` | Dashboard script |
 | `GET` | `/v1/incidents` | Query detected incidents |
 | `GET` | `/health` | Health check |
 | `GET` | `/metrics` | Prometheus metrics |
+
+Open the dashboard at http://localhost:8080/.
 
 ### 2. Install the SDK
 
@@ -58,15 +66,29 @@ npm install @hawkeye/observer-sdk
 ### 3. Add to your app
 
 ```javascript
-import { initFrustrationObserver } from '@hawkeye/observer-sdk';
+import { init, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
-initFrustrationObserver({
+init({
   apiKey: 'dev-api-key',
   ingestionUrl: 'http://localhost:8080',
+  appVersion: '1.4.0',
+  events: ['signup_submitted'],
+  importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
 });
+
+// <form data-hawkeye="signup"><button type="submit" data-hawkeye="signup-submit">
+const signup = flow('signup');
+signup.start();
+formOutcome({ formKey: 'signup', result: 'success' });
+track('signup_submitted');
+signup.complete();
 ```
 
-That's it. HawkEye captures clicks, scrolls, errors, navigation and form interactions automatically.
+Call `init` from a React or Next.js `useEffect`, and return `teardown` from that effect. Do not call `init` at module scope in a server component.
+
+For a flow with more than one step, call `step` in order. `complete()` applies when the final step is already the furthest step.
+
+Open the dashboard at http://localhost:8080/. HawkEye reports dead controls, repeated clicks, validation loops, failed actions, and abandoned flows. It does not record sessions.
 
 ## Local Development
 
@@ -165,15 +187,29 @@ HawkEye is designed to integrate in three common ways depending on your architec
 Use this for React, Next.js, Vue, Angular, or plain JS apps.
 
 ```javascript
-import { initFrustrationObserver } from '@hawkeye/observer-sdk';
+import { init, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
-initFrustrationObserver({
-  apiKey: process.env.HAWKEYE_API_KEY,
-  ingestionUrl: 'https://hawkeye.your-company.com',
+init({
+  apiKey: 'dev-api-key',
+  ingestionUrl: 'http://localhost:8080',
+  appVersion: '1.4.0',
+  events: ['signup_submitted'],
+  importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
 });
+
+// <form data-hawkeye="signup"><button type="submit" data-hawkeye="signup-submit">
+const signup = flow('signup');
+signup.start();
+formOutcome({ formKey: 'signup', result: 'success' });
+track('signup_submitted');
+signup.complete();
 ```
 
-The SDK sends behavioral events to `POST /v1/events`, and your app can query incidents from `GET /v1/incidents` (typically via your backend).
+Call `init` from a React or Next.js `useEffect`, and return `teardown` from that effect. Do not call `init` at module scope in a server component.
+
+For a flow with more than one step, call `step` in order. `complete()` applies when the final step is already the furthest step.
+
+The SDK sends events to `POST /v1/events`. The dashboard is at http://localhost:8080/. Your app can also query `GET /v1/issues` and `GET /v1/flows`.
 
 ### 2) Backend-to-backend integration (no browser SDK)
 

@@ -1,42 +1,44 @@
-# React Integration Example
+# React
 
-This example demonstrates how to integrate HawkEye Observer SDK into a React application.
-
-## Quick Setup
-
-### 1. Install the SDK
-
-```bash
-npm install @hawkeye/observer-sdk
-```
-
-### 2. Initialize in Your App Component
+Call `init` once from a `useEffect` in the root component. Return `teardown` from that effect. Do not initialize in every component.
 
 ```jsx
-import React, { useEffect } from 'react';
-import { initFrustrationObserver, teardown } from '@hawkeye/observer-sdk';
+import { useEffect } from 'react';
+import { init, teardown, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
 function App() {
   useEffect(() => {
-    initFrustrationObserver({
+    init({
       apiKey: 'your-api-key-here',
-      ingestionUrl: 'https://api.hawkeye.example.com',
-      enableDebug: process.env.NODE_ENV === 'development',
-      environment: process.env.NODE_ENV,
+      ingestionUrl: 'http://localhost:8080',
+      appVersion: '1.4.0',
+      events: ['signup_submitted'],
+      importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
     });
-
     return () => {
       teardown();
     };
   }, []);
 
-  return <div>Your App</div>;
+  const submit = () => {
+    const signup = flow('signup');
+    signup.start();
+    formOutcome({ formKey: 'signup', result: 'success' });
+    track('signup_submitted', { plan: 'free' });
+    signup.complete();
+  };
+
+  return (
+    <form data-hawkeye="signup">
+      <button type="submit" data-hawkeye="signup-submit" onClick={submit}>
+        Create account
+      </button>
+    </form>
+  );
 }
 ```
 
-## Using the Custom Hook
-
-For cleaner code, use the provided `useHawkEye` hook:
+`useHawkEye` is the same `init` / `teardown` pair:
 
 ```jsx
 import { useHawkEye } from './useHawkEye';
@@ -44,53 +46,16 @@ import { useHawkEye } from './useHawkEye';
 function App() {
   useHawkEye({
     apiKey: 'your-api-key-here',
-    ingestionUrl: 'https://api.hawkeye.example.com',
-    enableDebug: process.env.NODE_ENV === 'development',
+    ingestionUrl: 'http://localhost:8080',
+    events: ['signup_submitted'],
+    importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
   });
-
-  return <div>Your App</div>;
+  return <div>Your app</div>;
 }
 ```
 
-## Tracking Custom Events
+For more than one step, call `flow(name).step` in order, then `complete()` once the final step is the furthest step.
 
-```jsx
-import { captureEvent } from '@hawkeye/observer-sdk';
+Clicks, dead clicks, navigation, and errors are automatic. Mark the control with `data-hawkeye`. Put `data-hawkeye-ignore` on chrome that should not count, such as a carousel control. The SDK does not record the DOM, input values, or scroll position.
 
-function PremiumButton() {
-  const handleUpgrade = () => {
-    captureEvent(
-      'upgrade_clicked',
-      { type: 'button', id: 'premium-upgrade' },
-      { plan: 'premium', price: 29.99 }
-    );
-  };
-
-  return <button onClick={handleUpgrade}>Upgrade to Premium</button>;
-}
-```
-
-## Best Practices
-
-1. **Initialize Early**: Place initialization in your root App component
-2. **Environment Detection**: Use `process.env.NODE_ENV` for automatic environment detection
-3. **Debug Mode**: Enable debug mode in development to see SDK logs
-4. **Cleanup**: Always call `teardown()` in the useEffect cleanup function
-5. **Single Instance**: Only initialize once in your application
-
-## What Gets Tracked?
-
-HawkEye automatically tracks:
-- Click events
-- Form inputs (content not captured, only interactions)
-- Scroll behavior
-- JavaScript errors
-- Page navigation
-- Route changes (React Router compatible)
-
-## Privacy & Security
-
-- **No sensitive data**: Input values are never captured
-- **No passwords**: Password fields are ignored
-- **No PII**: Personal information is not collected
-- **GDPR compliant**: Only behavioral signals are tracked
+Props named `email`, `password`, `name`, and the rest of the denylist drop the `track` event. Do not send field values.

@@ -1,23 +1,30 @@
 import { useEffect } from 'react';
-import { initFrustrationObserver, teardown } from '@hawkeye/observer-sdk';
+import { useRouter } from 'next/router';
+import { init, teardown, setRoute } from '@hawkeye/observer-sdk';
+import { hawkeyeTemplate } from '../lib/hawkeye';
 
 function MyApp({ Component, pageProps }) {
+  const router = useRouter();
+
   useEffect(() => {
-    // Initialize HawkEye on client side only
-    if (typeof window !== 'undefined') {
-      initFrustrationObserver({
-        apiKey: process.env.NEXT_PUBLIC_HAWKEYE_API_KEY,
-        ingestionUrl: process.env.NEXT_PUBLIC_HAWKEYE_INGESTION_URL,
-        enableDebug: process.env.NODE_ENV === 'development',
-        environment: process.env.NODE_ENV,
-        appId: 'my-nextjs-app',
-      });
-    }
+    init({
+      apiKey: process.env.NEXT_PUBLIC_HAWKEYE_API_KEY,
+      ingestionUrl: process.env.NEXT_PUBLIC_HAWKEYE_INGESTION_URL,
+      appVersion: process.env.NEXT_PUBLIC_APP_VERSION,
+      environment: process.env.NODE_ENV,
+      events: ['signup_submitted'],
+      importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
+    });
 
     return () => {
       teardown();
     };
   }, []);
+
+  useEffect(() => {
+    if (!router.pathname) return;
+    setRoute(hawkeyeTemplate(router.pathname));
+  }, [router.pathname]);
 
   return <Component {...pageProps} />;
 }

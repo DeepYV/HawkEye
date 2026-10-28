@@ -25,61 +25,50 @@
     </style>
 </head>
 <body>
-    <h1>HawkEye Observer SDK - Vanilla JS Example</h1>
+    <h1>HawkEye observer SDK</h1>
 
     <div class="info">
         <h3>Status: <span id="status">Initializing...</span></h3>
-        <p>Session ID: <span id="session-id">-</span></p>
+        <p>Dead clicks, errors, and the signup flow are reported. The DOM is not recorded.</p>
     </div>
 
-    <h2>Interactive Demo</h2>
-    <p>All interactions on this page are automatically tracked by HawkEye:</p>
+    <button type="button" id="custom-event" data-hawkeye="demo-clicked">Track demo click</button>
 
-    <button id="test-button">Click Me</button>
-    <button id="custom-event">Track Custom Event</button>
-
-    <h3>Form Example</h3>
-    <form id="demo-form">
-        <input type="text" placeholder="Type something..." />
-        <button type="submit">Submit</button>
+    <h3>Signup</h3>
+    <form id="demo-form" data-hawkeye="signup">
+        <button type="submit" data-hawkeye="signup-submit">Create account</button>
     </form>
 
-    <!-- Load SDK from CDN or local build -->
+    <div data-hawkeye-ignore>
+        <button type="button">Carousel next</button>
+    </div>
+
     <script type="module">
-        // For CDN: import from unpkg or jsdelivr
-        // import { initFrustrationObserver, getSessionId, captureEvent } from 'https://unpkg.com/@hawkeye/observer-sdk';
+        import { init, track, formOutcome, flow } from '../../sdk/dist/index.js';
 
-        // For local development: import from your build
-        import { initFrustrationObserver, getSessionId, captureEvent } from '../../sdk/dist/index.js';
-
-        // Initialize HawkEye
-        initFrustrationObserver({
-            apiKey: 'demo-api-key',
-            ingestionUrl: 'https://api.hawkeye.example.com',
-            enableDebug: true,
+        init({
+            apiKey: 'dev-api-key',
+            ingestionUrl: 'http://localhost:8080',
+            appVersion: '1.4.0',
             environment: 'development',
-            appId: 'vanilla-js-demo',
+            events: ['signup_submitted', 'demo_clicked'],
+            importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
         });
 
-        // Update UI with session ID
-        const sessionId = getSessionId();
         document.getElementById('status').textContent = 'Active';
-        document.getElementById('session-id').textContent = sessionId || 'N/A';
 
-        // Track custom event
+        const signup = flow('signup');
+
         document.getElementById('custom-event').addEventListener('click', () => {
-            captureEvent(
-                'custom_button_click',
-                { type: 'button', id: 'custom-event' },
-                { feature: 'demo', timestamp: Date.now() }
-            );
-            alert('Custom event tracked!');
+            track('demo_clicked', { source: 'vanilla' });
         });
 
-        // Prevent form submission for demo
-        document.getElementById('demo-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            alert('Form submission tracked!');
+        document.getElementById('demo-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            signup.start();
+            formOutcome({ formKey: 'signup', result: 'success' });
+            track('signup_submitted', { plan: 'free' });
+            signup.complete();
         });
     </script>
 </body>

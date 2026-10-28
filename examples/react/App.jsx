@@ -1,41 +1,38 @@
 import React, { useEffect } from 'react';
-import { initFrustrationObserver, captureEvent, teardown } from '@hawkeye/observer-sdk';
+import { init, teardown, track, formOutcome, flow } from '@hawkeye/observer-sdk';
 
 function App() {
   useEffect(() => {
-    // Initialize HawkEye on component mount
-    initFrustrationObserver({
+    init({
       apiKey: 'your-api-key-here',
-      ingestionUrl: 'https://api.hawkeye.example.com',
-      enableDebug: process.env.NODE_ENV === 'development',
+      ingestionUrl: 'http://localhost:8080',
+      appVersion: '1.4.0',
       environment: process.env.NODE_ENV,
-      appId: 'my-react-app',
-      batchSize: 10,
-      batchInterval: 5000,
+      events: ['signup_submitted'],
+      importantFlows: [{ name: 'signup', steps: ['account'], important: true }],
     });
 
-    // Cleanup on unmount
     return () => {
       teardown();
     };
   }, []);
 
-  const handleCustomEvent = () => {
-    // Track custom events
-    captureEvent(
-      'custom_action',
-      { type: 'button', id: 'custom-button' },
-      { feature: 'premium', action: 'upgrade_clicked' }
-    );
+  const handleSignup = () => {
+    const signup = flow('signup');
+    signup.start();
+    formOutcome({ formKey: 'signup', result: 'success' });
+    track('signup_submitted', { plan: 'free' });
+    signup.complete();
   };
 
   return (
     <div className="App">
-      <h1>HawkEye React Example</h1>
-      <p>User interactions are automatically tracked</p>
-      <button onClick={handleCustomEvent}>
-        Track Custom Event
-      </button>
+      <h1>HawkEye React example</h1>
+      <form data-hawkeye="signup" onSubmit={(event) => event.preventDefault()}>
+        <button type="submit" data-hawkeye="signup-submit" onClick={handleSignup}>
+          Create account
+        </button>
+      </form>
     </div>
   );
 }

@@ -1,46 +1,15 @@
 import { useEffect } from 'react';
-import { initFrustrationObserver, teardown } from '@hawkeye/observer-sdk';
+import { init, teardown } from '@hawkeye/observer-sdk';
 
 /**
- * Custom React hook for HawkEye integration
- *
- * @param {Object} config - SDK configuration
- * @returns {void}
+ * Start HawkEye for this mount and stop it on cleanup.
+ * Pass the same object shape as init().
  */
 export function useHawkEye(config) {
   useEffect(() => {
-    initFrustrationObserver(config);
-
+    init(config);
     return () => {
       teardown();
     };
   }, [config.apiKey, config.ingestionUrl]);
 }
-
-/**
- * Example usage:
- *
- * function App() {
- *   useHawkEye({
- *     apiKey: 'your-api-key',
- *     ingestionUrl: 'https://api.hawkeye.example.com',
- *     enableDebug: true,
- *     environment: 'production',
- *   });
- *
- *   return <div>Your app</div>;
- * }
- *
- * Local development (with dev server on single port):
- *
- * function App() {
- *   useHawkEye({
- *     apiKey: 'dev-api-key',
- *     ingestionUrl: 'http://localhost:8080',
- *     enableDebug: true,
- *     environment: 'development',
- *   });
- *
- *   return <div>Your app</div>;
- * }
- */

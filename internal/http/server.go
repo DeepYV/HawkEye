@@ -2,6 +2,9 @@
 //
 // All routes are mounted on a single port. The server exposes:
 //   - POST /v1/events    — event ingestion from SDK
+//   - GET  /v1/issues    — ranked issues
+//   - GET  /v1/flows     — flow summaries
+//   - GET  /             — dashboard
 //   - GET  /v1/incidents — query detected incidents
 //   - GET  /health       — health check
 //   - GET  /metrics      — Prometheus metrics
@@ -11,9 +14,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -22,8 +27,10 @@ import (
 
 	"github.com/your-org/frustration-engine/internal/incident"
 	"github.com/your-org/frustration-engine/internal/ingest"
+	"github.com/your-org/frustration-engine/internal/issues"
 	"github.com/your-org/frustration-engine/internal/metrics"
 	"github.com/your-org/frustration-engine/pkg/types"
+	"github.com/your-org/frustration-engine/web"
 )
 
 type ctxKey int
@@ -35,15 +42,17 @@ type Server struct {
 	router    chi.Router
 	ingest    *ingest.Handler
 	incidents *incident.Service
+	issues    *issues.Store
 	apiKey    string
 }
 
 // NewServer creates a new HTTP server with all routes configured.
-func NewServer(ingestHandler *ingest.Handler, incidentSvc *incident.Service, apiKey string, devMode bool) *Server {
+func NewServer(ingestHandler *ingest.Handler, incidentSvc *incident.Service, issueStore *issues.Store, apiKey string, devMode bool) *Server {
 	s := &Server{
 		router:    chi.NewRouter(),
 		ingest:    ingestHandler,
 		incidents: incidentSvc,
+		issues:    issueStore,
 		apiKey:    apiKey,
 	}
 
@@ -61,6 +70,12 @@ func NewServer(ingestHandler *ingest.Handler, incidentSvc *incident.Service, api
 	// Public endpoints
 	s.router.Get("/health", s.handleHealth)
 	s.router.Handle("/metrics", promhttp.Handler())
+	s.router.Get("/", s.handleIndex)
+	s.router.Get("/app.js", s.handleAppJS)
+	s.router.Get("/v1/issues", s.handleListIssues)
+	s.router.Get("/v1/issues/{id}", s.handleGetIssue)
+	s.router.Get("/v1/flows", s.handleFlows)
+	s.router.Options("/v1/events", s.handleEventsPreflight)
 
 	// Authenticated endpoints
 	s.router.Group(func(r chi.Router) {
@@ -102,34 +117,184 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request) {
-	var req types.IngestRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// The browser reads this response after a cross-origin preflight.
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
 		writeJSON(w, http.StatusBadRequest, types.IngestResponse{
 			Success: false, Message: "invalid request body",
 		})
 		return
 	}
 
-	pid, _ := r.Context().Value(projectIDKey).(string)
-	if pid == "" {
-		pid = req.AppID
+	events, legacy, err := issues.DecodeBatch(body)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, types.IngestResponse{
+			Success: false, Message: "invalid request body",
+		})
+		return
 	}
-	if pid == "" {
-		pid = "default"
+	if legacy {
+		var req types.IngestRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			writeJSON(w, http.StatusBadRequest, types.IngestResponse{
+				Success: false, Message: "invalid request body",
+			})
+			return
+		}
+
+		pid, _ := r.Context().Value(projectIDKey).(string)
+		if pid == "" {
+			pid = req.AppID
+		}
+		if pid == "" {
+			pid = "default"
+		}
+
+		processed, err := s.ingest.Ingest(r.Context(), pid, req.Events)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, types.IngestResponse{
+				Success: false, Message: "storage error",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, types.IngestResponse{
+			Success:   true,
+			Processed: processed,
+		})
+		return
 	}
 
-	processed, err := s.ingest.Ingest(r.Context(), pid, req.Events)
-	if err != nil {
+	if s.issues == nil {
 		writeJSON(w, http.StatusInternalServerError, types.IngestResponse{
 			Success: false, Message: "storage error",
 		})
 		return
 	}
-
+	processed := s.issues.Apply(time.Now(), events)
 	writeJSON(w, http.StatusOK, types.IngestResponse{
 		Success:   true,
 		Processed: processed,
 	})
+}
+
+func (s *Server) handleListIssues(w http.ResponseWriter, r *http.Request) {
+	window, ok := parseDayWindow(r.URL.Query().Get("window"))
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid window"})
+		return
+	}
+	if s.issues == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "query failed"})
+		return
+	}
+	result := s.issues.List(issues.Query{
+		Now:        time.Now(),
+		Window:     window,
+		IncludeLow: r.URL.Query().Get("include") == "low",
+		Limit:      parseLimit(r.URL.Query().Get("limit")),
+	})
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) handleGetIssue(w http.ResponseWriter, r *http.Request) {
+	id, ok := normalizeIssueID(chi.URLParam(r, "id"))
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return
+	}
+	if s.issues == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	iss, found := s.issues.Get(time.Now(), id, 7*24*time.Hour)
+	if !found {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	writeJSON(w, http.StatusOK, iss)
+}
+
+func (s *Server) handleFlows(w http.ResponseWriter, r *http.Request) {
+	window, ok := parseDayWindow(r.URL.Query().Get("window"))
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid window"})
+		return
+	}
+	if s.issues == nil {
+		writeJSON(w, http.StatusOK, issues.FlowReport{WindowMs: window.Milliseconds(), Flows: []issues.FlowSummary{}})
+		return
+	}
+	writeJSON(w, http.StatusOK, s.issues.Flows(time.Now(), window))
+}
+
+func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
+	serveEmbedded(w, "index.html", "text/html; charset=utf-8")
+}
+
+func (s *Server) handleAppJS(w http.ResponseWriter, r *http.Request) {
+	serveEmbedded(w, "app.js", "application/javascript; charset=utf-8")
+}
+
+func (s *Server) handleEventsPreflight(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func serveEmbedded(w http.ResponseWriter, name, contentType string) {
+	b, err := web.Files.ReadFile(name)
+	if err != nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
+}
+
+func parseDayWindow(v string) (time.Duration, bool) {
+	if v == "" {
+		v = "7d"
+	}
+	if len(v) != 2 || v[1] != 'd' || v[0] < '1' || v[0] > '7' {
+		return 0, false
+	}
+	days := int(v[0] - '0')
+	return time.Duration(days) * 24 * time.Hour, true
+}
+
+func parseLimit(v string) int {
+	if v == "" {
+		return 50
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 {
+		return 50
+	}
+	if n > 200 {
+		return 200
+	}
+	return n
+}
+
+func normalizeIssueID(id string) (string, bool) {
+	if len(id) != 64 {
+		return "", false
+	}
+	for _, c := range id {
+		switch {
+		case c >= '0' && c <= '9':
+		case c >= 'a' && c <= 'f':
+		case c >= 'A' && c <= 'F':
+		default:
+			return "", false
+		}
+	}
+	return strings.ToLower(id), true
 }
 
 func (s *Server) handleQueryIncidents(w http.ResponseWriter, r *http.Request) {

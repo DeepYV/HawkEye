@@ -1,7 +1,17 @@
-/**
- * HawkEye Observer SDK
- * Main entry point
- */
+export type {
+  FlowDefinition,
+  InitOptions,
+  FormResult,
+  FormOutcomeInput,
+  FlowHandle,
+} from './types/api.js';
+export type {
+  IssueType,
+  Confidence,
+  IssueEvidence,
+  Issue,
+  FlowStepSummary,
+  FlowSummary,
+} from './types/issue.js';
 
-export { initFrustrationObserver, getSessionId, captureEvent, flushEvents, teardown } from './core/init';
-export type { SDKConfig, Event, EventTarget, IngestRequest, IngestResponse } from './types';
+export { init, track, formOutcome, flow, setRoute, teardown } from './core/init.js';

@@ -7,12 +7,14 @@ package app
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/your-org/frustration-engine/internal/config"
 	"github.com/your-org/frustration-engine/internal/engine"
 	hawkhttp "github.com/your-org/frustration-engine/internal/http"
 	"github.com/your-org/frustration-engine/internal/incident"
 	"github.com/your-org/frustration-engine/internal/ingest"
+	"github.com/your-org/frustration-engine/internal/issues"
 	"github.com/your-org/frustration-engine/internal/metrics"
 	"github.com/your-org/frustration-engine/internal/session"
 	memstorage "github.com/your-org/frustration-engine/internal/storage/memory"
@@ -25,6 +27,7 @@ type App struct {
 	Server         *hawkhttp.Server
 	SessionManager *session.Manager
 	IncidentSvc    *incident.Service
+	IssueStore     *issues.Store
 	cfg            *config.Config
 	cancel         context.CancelFunc
 }
@@ -36,12 +39,14 @@ func New(cfg *config.Config) *App {
 	sessionMgr := session.NewManager()
 	incidentSvc := incident.NewService(incidentStore)
 	ingestHandler := ingest.NewHandler(eventStore, sessionMgr)
-	server := hawkhttp.NewServer(ingestHandler, incidentSvc, cfg.APIKey, cfg.Dev)
+	issueStore := issues.NewStore()
+	server := hawkhttp.NewServer(ingestHandler, incidentSvc, issueStore, cfg.APIKey, cfg.Dev)
 
 	return &App{
 		Server:         server,
 		SessionManager: sessionMgr,
 		IncidentSvc:    incidentSvc,
+		IssueStore:     issueStore,
 		cfg:            cfg,
 	}
 }
@@ -52,6 +57,20 @@ func (a *App) Start(ctx context.Context) {
 	a.cancel = cancel
 
 	a.SessionManager.Start(ctx)
+
+	// Drop raw issue events older than the retention window. Open flow attempts stay.
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case tick := <-ticker.C:
+				a.IssueStore.Sweep(tick)
+			}
+		}
+	}()
 
 	// Session → Engine → Incident Store pipeline
 	go func() {
